@@ -13,6 +13,15 @@
 #define LISTENQ 10
 #define MAXDATASIZE 100
 
+int getPort() {
+    int port;
+
+    printf("Enter de port number: ");
+    scanf("%d", &port);
+
+    return htons(port);
+}
+
 int main (int argc, char **argv) {
     int    listenfd, connfd;
     struct sockaddr_in servaddr;
@@ -30,7 +39,7 @@ int main (int argc, char **argv) {
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family      = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port        = htons(13);   
+    servaddr.sin_port        = getPort();   
 
     if (bind(listenfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) {
         perror("bind");

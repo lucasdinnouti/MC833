@@ -43,6 +43,11 @@ int main(int argc, char **argv) {
         perror("connect error");
         exit(1);
     }
+    
+    //socklen_t len = sizeof(servaddr);
+    //int name = getsockname(sockfd, (struct sockaddr *) &servaddr, &len);
+    printf("%d \n", servaddr.sin_port);
+    //printf("%d \n", name);
 
     while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
         recvline[n] = 0;
