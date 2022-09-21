@@ -12,6 +12,15 @@
 
 #define MAXLINE 4096
 
+int getPort() {
+    int port;
+
+    printf("Enter the port number: ");
+    scanf("%d", &port);
+
+    return port;
+}
+
 int main(int argc, char **argv) {
     int    sockfd, n;
     char   recvline[MAXLINE + 1];
@@ -33,7 +42,7 @@ int main(int argc, char **argv) {
 
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port   = htons(13);
+    servaddr.sin_port   = htons(getPort());
     if (inet_pton(AF_INET, argv[1], &servaddr.sin_addr) <= 0) {
         perror("inet_pton error");
         exit(1);
