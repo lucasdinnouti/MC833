@@ -14,7 +14,7 @@
 #define MAXDATASIZE 100
 #define MAXLINE 4096
 
-int get_port() {
+int getPort() {
     int port;
 
     printf("Enter the port number: ");
@@ -23,10 +23,20 @@ int get_port() {
     return htons(port);
 }
 
-void receive_message(connfd) {
+void receiveMessage(connfd) {
     char message[MAXLINE + 1] = { 0 };
     read(connfd, message, 1024);
     printf("Message received: %s\n", message);
+}
+
+struct sockaddr_in getSockName(int connfd, int addrSize) {
+    struct sockaddr_in addr;
+    socklen_t len = addrSize;
+    if (getpeername(connfd, (struct sockaddr*)&addr, &len) == -1 ) {
+        perror("getpeername");
+        exit(1);
+    }
+    return addr;
 }
 
 int main (int argc, char **argv) {
@@ -43,7 +53,7 @@ int main (int argc, char **argv) {
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family      = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port        = get_port();   
+    servaddr.sin_port        = getPort();   
 
     if (bind(listenfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) {
         perror("bind");
@@ -61,16 +71,11 @@ int main (int argc, char **argv) {
             exit(1);
         }
 
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(servaddr);
-        if (getpeername(connfd, (struct sockaddr*)&addr, &len) == -1 ) {
-            perror("getpeername");
-            exit(1);
-        }
+        struct sockaddr_in addr = getSockName(connfd, sizeof(servaddr));
         printf("Peer IP address: %s\n", inet_ntoa(addr.sin_addr));
         printf("Peer port      : %d\n", ntohs(addr.sin_port));
         
-        receive_message(connfd);
+        receiveMessage(connfd);
 
         ticks = time(NULL);
         snprintf(buf, sizeof(buf), "Hello from server!\nTime: %.24s\r\n", ctime(&ticks));

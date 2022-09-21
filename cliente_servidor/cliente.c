@@ -13,7 +13,7 @@
 #define MAXLINE 4096
 #define MAXDATASIZE 100
 
-int get_port() {
+int getPort() {
     int port;
 
     printf("Enter the port number: ");
@@ -22,11 +22,21 @@ int get_port() {
     return port;
 }
 
-void send_message(sockfd) {
+void sendMessage(sockfd) {
     char message[MAXDATASIZE];
     printf("Enter a message to send to the server: ");
     scanf("%s", message);
     write(sockfd, message, strlen(message));
+}
+
+struct sockaddr_in getSockName(int sockfd, int addrSize) {
+    struct sockaddr_in addr;
+    socklen_t len = addrSize;
+    if (getsockname(sockfd, (struct sockaddr *) &addr, &len) < 0) {
+        perror("getsockname");
+        exit(1);
+    }
+    return addr;
 }
 
 int main(int argc, char **argv) {
@@ -50,7 +60,7 @@ int main(int argc, char **argv) {
 
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port   = htons(get_port());
+    servaddr.sin_port   = htons(getPort());
     if (inet_pton(AF_INET, argv[1], &servaddr.sin_addr) <= 0) {
         perror("inet_pton error");
         exit(1);
@@ -62,17 +72,11 @@ int main(int argc, char **argv) {
     }
     
     
-    struct sockaddr_in addr;
-    socklen_t len = sizeof(servaddr);
-    int name;
-    if ((name  = getsockname(sockfd, (struct sockaddr *) &addr, &len)) < 0) {
-        perror("getsockname");
-        exit(1);
-    }
+    struct sockaddr_in addr = getSockName(sockfd, sizeof(servaddr));
     printf("Local IP address: %s\n", inet_ntoa(addr.sin_addr));
     printf("Local port      : %d\n", ntohs(addr.sin_port));
 
-    send_message(sockfd);
+    sendMessage(sockfd);
     
     while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
         recvline[n] = 0;
