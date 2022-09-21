@@ -13,6 +13,12 @@
 #define MAXLINE 4096
 #define MAXDATASIZE 100
 
+/** @brief Reads a port number from input. 
+ *
+ *  Related to item 4.
+ *
+ *  @return Port to be used on socket address.
+ */
 int getPort() {
     int port;
 
@@ -22,13 +28,14 @@ int getPort() {
     return port;
 }
 
-void sendMessage(sockfd) {
-    char message[MAXDATASIZE];
-    printf("Enter a message to send to the server: ");
-    scanf("%s", message);
-    write(sockfd, message, strlen(message));
-}
-
+/** @brief Gets address from a given socket using getsockname.
+ *
+ *  Related to item 5.
+ *
+ *  @param connfd socket identifier.
+ *  @param addrSize size of the returned address.
+ *  @return socket address.
+ */
 struct sockaddr_in getSockName(int sockfd, int addrSize) {
     struct sockaddr_in addr;
     socklen_t len = addrSize;
@@ -37,6 +44,19 @@ struct sockaddr_in getSockName(int sockfd, int addrSize) {
         exit(1);
     }
     return addr;
+}
+
+/** @brief Sends a message of maximum size MAXDATASIZE to a given open socket connection.
+ *
+ *  Related to item 7.
+ *
+ *  @param sockfd socket identifier.
+ */
+void sendMessage(sockfd) {
+    char message[MAXDATASIZE];
+    printf("Enter a message to send to the server: ");
+    scanf("%s", message);
+    write(sockfd, message, strlen(message));
 }
 
 int main(int argc, char **argv) {

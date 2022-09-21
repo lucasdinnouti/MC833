@@ -14,6 +14,12 @@
 #define MAXDATASIZE 100
 #define MAXLINE 4096
 
+/** @brief Reads a port number from input and transforms it into a network byte. 
+ *
+ *  Related to item 4.
+ *
+ *  @return Network byte to be use as socket port.
+ */
 int getPort() {
     int port;
 
@@ -23,12 +29,14 @@ int getPort() {
     return htons(port);
 }
 
-void receiveMessage(connfd) {
-    char message[MAXLINE + 1] = { 0 };
-    read(connfd, message, 1024);
-    printf("Message received: %s\n", message);
-}
-
+/** @brief Gets address from a given socket client using getpeername.
+ *
+ *  Related to item 6.
+ *
+ *  @param connfd socket identifier.
+ *  @param addrSize size of the returned address.
+ *  @return socket address.
+ */
 struct sockaddr_in getSockName(int connfd, int addrSize) {
     struct sockaddr_in addr;
     socklen_t len = addrSize;
@@ -38,6 +46,19 @@ struct sockaddr_in getSockName(int connfd, int addrSize) {
     }
     return addr;
 }
+
+/** @brief Reads a message of size MAXLINE from a given open socket connection.
+ *
+ *  Related to item 7.
+ *
+ *  @param connfd socket identifier.
+ */
+void receiveMessage(connfd) {
+    char message[MAXLINE + 1] = { 0 };
+    read(connfd, message, 1024);
+    printf("Message received: %s\n", message);
+}
+
 
 int main (int argc, char **argv) {
     int    listenfd, connfd;
