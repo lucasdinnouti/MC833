@@ -53,7 +53,7 @@ struct sockaddr_in getSockName(int connfd, int addrSize) {
  *
  *  @param connfd socket identifier.
  */
-void receiveMessage(connfd) {
+void receiveMessage(int connfd) {
     char message[MAXLINE + 1] = { 0 };
     read(connfd, message, 1024);
     printf("Message received: %s\n", message);

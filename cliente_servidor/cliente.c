@@ -52,7 +52,7 @@ struct sockaddr_in getSockName(int sockfd, int addrSize) {
  *
  *  @param sockfd socket identifier.
  */
-void sendMessage(sockfd) {
+void sendMessage(int sockfd) {
     char message[MAXDATASIZE];
     printf("Enter a message to send to the server: ");
     scanf("%s", message);
