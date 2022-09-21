@@ -53,11 +53,17 @@ int main(int argc, char **argv) {
         exit(1);
     }
     
-    //socklen_t len = sizeof(servaddr);
-    //int name = getsockname(sockfd, (struct sockaddr *) &servaddr, &len);
-    printf("%d \n", servaddr.sin_port);
-    //printf("%d \n", name);
-
+    
+    struct sockaddr_in addr;
+    socklen_t len = sizeof(servaddr);
+    int name;
+    if ((name  = getsockname(sockfd, (struct sockaddr *) &addr, &len)) < 0) {
+        perror("getsockname");
+        exit(1);
+    }
+    printf("Local IP address: %s\n", inet_ntoa(addr.sin_addr));
+    printf("Local port      : %d\n", ntohs(addr.sin_port));
+    
     while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
         recvline[n] = 0;
         if (fputs(recvline, stdout) == EOF) {

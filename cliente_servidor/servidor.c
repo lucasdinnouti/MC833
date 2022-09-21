@@ -28,9 +28,6 @@ int main (int argc, char **argv) {
     char   buf[MAXDATASIZE];
     time_t ticks;
 
-    struct sockaddr_in addr;
-    socklen_t len;
-
     if ((listenfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         perror("socket");
         exit(1);
@@ -57,11 +54,12 @@ int main (int argc, char **argv) {
             exit(1);
         }
 
-        len = sizeof(servaddr);
+        struct sockaddr_in addr;
+        socklen_t len = sizeof(servaddr);
         if (getpeername(connfd, (struct sockaddr*)&addr, &len) == -1 ) {
             perror("getpeername");
             exit(1);
-        }        
+        }
         printf("Peer IP address: %s\n", inet_ntoa(addr.sin_addr));
         printf("Peer port      : %d\n", ntohs(addr.sin_port));
 
