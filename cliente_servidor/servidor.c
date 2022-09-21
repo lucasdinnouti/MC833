@@ -12,14 +12,21 @@
 
 #define LISTENQ 10
 #define MAXDATASIZE 100
+#define MAXLINE 4096
 
-int getPort() {
+int get_port() {
     int port;
 
     printf("Enter the port number: ");
     scanf("%d", &port);
 
     return htons(port);
+}
+
+void receive_message(connfd) {
+    char message[MAXLINE + 1] = { 0 };
+    read(connfd, message, 1024);
+    printf("Message received: %s\n", message);
 }
 
 int main (int argc, char **argv) {
@@ -36,7 +43,7 @@ int main (int argc, char **argv) {
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family      = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port        = getPort();   
+    servaddr.sin_port        = get_port();   
 
     if (bind(listenfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) {
         perror("bind");
@@ -62,11 +69,13 @@ int main (int argc, char **argv) {
         }
         printf("Peer IP address: %s\n", inet_ntoa(addr.sin_addr));
         printf("Peer port      : %d\n", ntohs(addr.sin_port));
+        
+        receive_message(connfd);
 
         ticks = time(NULL);
         snprintf(buf, sizeof(buf), "Hello from server!\nTime: %.24s\r\n", ctime(&ticks));
         write(connfd, buf, strlen(buf));
-
+        
         close(connfd);
     }
     return(0);

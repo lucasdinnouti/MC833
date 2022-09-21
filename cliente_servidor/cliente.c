@@ -11,14 +11,22 @@
 #include <unistd.h>
 
 #define MAXLINE 4096
+#define MAXDATASIZE 100
 
-int getPort() {
+int get_port() {
     int port;
 
     printf("Enter the port number: ");
     scanf("%d", &port);
 
     return port;
+}
+
+void send_message(sockfd) {
+    char message[MAXDATASIZE];
+    printf("Enter a message to send to the server: ");
+    scanf("%s", message);
+    write(sockfd, message, strlen(message));
 }
 
 int main(int argc, char **argv) {
@@ -42,7 +50,7 @@ int main(int argc, char **argv) {
 
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port   = htons(getPort());
+    servaddr.sin_port   = htons(get_port());
     if (inet_pton(AF_INET, argv[1], &servaddr.sin_addr) <= 0) {
         perror("inet_pton error");
         exit(1);
@@ -63,6 +71,8 @@ int main(int argc, char **argv) {
     }
     printf("Local IP address: %s\n", inet_ntoa(addr.sin_addr));
     printf("Local port      : %d\n", ntohs(addr.sin_port));
+
+    send_message(sockfd);
     
     while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
         recvline[n] = 0;
@@ -71,7 +81,7 @@ int main(int argc, char **argv) {
             exit(1);
         }
     }
-
+    
     if (n < 0) {
         perror("read error");
         exit(1);
