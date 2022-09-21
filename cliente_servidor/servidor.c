@@ -16,7 +16,7 @@
 int getPort() {
     int port;
 
-    printf("Enter de port number: ");
+    printf("Enter the port number: ");
     scanf("%d", &port);
 
     return htons(port);
@@ -52,20 +52,22 @@ int main (int argc, char **argv) {
     }
 
     for ( ; ; ) {
-      if ((connfd = accept(listenfd, (struct sockaddr *) NULL, NULL)) == -1 ) {
-        perror("accept");
-        exit(1);
+        if ((connfd = accept(listenfd, (struct sockaddr *) NULL, NULL)) == -1 ) {
+            perror("accept");
+            exit(1);
         }
 
-        len = sizeof(addr);
-        getpeername(listenfd, (struct sockaddr*)&addr, &len);
+        len = sizeof(servaddr);
+        if (getpeername(connfd, (struct sockaddr*)&addr, &len) == -1 ) {
+            perror("getpeername");
+            exit(1);
+        }        
         printf("Peer IP address: %s\n", inet_ntoa(addr.sin_addr));
         printf("Peer port      : %d\n", ntohs(addr.sin_port));
 
         ticks = time(NULL);
         snprintf(buf, sizeof(buf), "Hello from server!\nTime: %.24s\r\n", ctime(&ticks));
         write(connfd, buf, strlen(buf));
-
 
         close(connfd);
     }
