@@ -21,6 +21,16 @@ int getPort() {
     return port;
 }
 
+struct sockaddr_in getSockName(int sockfd, int addrSize) {
+    struct sockaddr_in addr;
+    socklen_t len = addrSize;
+    if (getsockname(sockfd, (struct sockaddr *) &addr, &len) < 0) {
+        perror("getsockname");
+        exit(1);
+    }
+    return addr;
+}
+
 int main(int argc, char **argv) {
     int    sockfd, n;
     char   recvline[MAXLINE + 1];
@@ -54,13 +64,7 @@ int main(int argc, char **argv) {
     }
     
     
-    struct sockaddr_in addr;
-    socklen_t len = sizeof(servaddr);
-    int name;
-    if ((name  = getsockname(sockfd, (struct sockaddr *) &addr, &len)) < 0) {
-        perror("getsockname");
-        exit(1);
-    }
+    struct sockaddr_in addr = getSockName(sockfd, sizeof(servaddr));
     printf("Local IP address: %s\n", inet_ntoa(addr.sin_addr));
     printf("Local port      : %d\n", ntohs(addr.sin_port));
     

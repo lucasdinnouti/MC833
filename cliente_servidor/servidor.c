@@ -22,6 +22,16 @@ int getPort() {
     return htons(port);
 }
 
+struct sockaddr_in getSockName(int connfd, int addrSize) {
+    struct sockaddr_in addr;
+    socklen_t len = addrSize;
+    if (getpeername(connfd, (struct sockaddr*)&addr, &len) == -1 ) {
+        perror("getpeername");
+        exit(1);
+    }
+    return addr;
+}
+
 int main (int argc, char **argv) {
     int    listenfd, connfd;
     struct sockaddr_in servaddr;
@@ -54,12 +64,7 @@ int main (int argc, char **argv) {
             exit(1);
         }
 
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(servaddr);
-        if (getpeername(connfd, (struct sockaddr*)&addr, &len) == -1 ) {
-            perror("getpeername");
-            exit(1);
-        }
+        struct sockaddr_in addr = getSockName(connfd, sizeof(servaddr));
         printf("Peer IP address: %s\n", inet_ntoa(addr.sin_addr));
         printf("Peer port      : %d\n", ntohs(addr.sin_port));
 
