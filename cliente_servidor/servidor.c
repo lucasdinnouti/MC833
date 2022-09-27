@@ -16,21 +16,7 @@
 #define MAXLINE 4096
 #define KGRN  "\x1B[32m"
 #define KNRM  "\x1B[0m"
-
-/** @brief Reads a port number from input and transforms it into a network byte. 
- *
- *  Related to item 4.
- *
- *  @return Network byte to be use as socket port.
- */
-int getPort() {
-    int port;
-
-    printf("Enter the port number: ");
-    scanf("%d", &port);
-
-    return htons(port);
-}
+#define KEY_WORD  "EXIT"
 
 /** @brief Gets address from a given socket client using getpeername.
  *
@@ -56,11 +42,11 @@ struct sockaddr_in getSockName(int connfd, int addrSize) {
  *
  *  @param connfd socket identifier.
  */
-void receiveMessage(int connfd) {
-    char message[MAXLINE + 1] = { 0 };
-    read(connfd, message, 1024);
+void receiveCommand(int connfd) {
+    char command[MAXLINE + 1] = { 0 };
+    read(connfd, command, 1024);
     time_t clock = time(NULL);
-    printf("%s%.24s - Message received: %s\n", KGRN, ctime(&clock), message);
+    printf("%s%.24s - Command received: %s\n%s", KGRN, ctime(&clock), command, KNRM);
 }
 
 /** @brief Sleeps for 20 seconds before closing connection
@@ -75,10 +61,40 @@ void serverSleep() {
     printf("%sFinishing sleep... \n", KNRM);    
 }
 
+int acceptConnection(int listenfd, struct sockaddr_in servaddr) {
+    int connfd;
+
+    if ((connfd = accept(listenfd, (struct sockaddr *) NULL, NULL)) == -1 ) {
+        perror("accept");
+        exit(1);
+    }
+
+    time_t clock = time(NULL);
+    printf("%s%.24s - Connection accepted \n%s", KGRN, ctime(&clock), KNRM);
+    struct sockaddr_in addr = getSockName(connfd, sizeof(servaddr));
+    printf("Peer IP address: %s\n", inet_ntoa(addr.sin_addr));
+    printf("Peer port      : %d\n", ntohs(addr.sin_port));
+
+    return connfd;
+}
+
+void readCommand(char* command) {
+    printf("Enter a command to execute on client: ");
+    scanf("%s", command);
+}
+
+void sendCommand(char* command, int connfd) {
+    char   buf[MAXDATASIZE];
+
+    snprintf(buf, sizeof(buf), "%s", command);
+    write(connfd, buf, strlen(buf));
+    time_t clock = time(NULL);
+    printf("%s%.24s - Command sent \n %s", KGRN, ctime(&clock), KNRM);
+}
+
 int main (int argc, char **argv) {
     int    listenfd, connfd;
     struct sockaddr_in servaddr;
-    char   buf[MAXDATASIZE];
     time_t ticks;
     char   error[MAXLINE + 1];
 
@@ -111,29 +127,18 @@ int main (int argc, char **argv) {
     }
 
     for ( ; ; ) {
-        if ((connfd = accept(listenfd, (struct sockaddr *) NULL, NULL)) == -1 ) {
-            perror("accept");
-            exit(1);
+
+        connfd = acceptConnection(listenfd, servaddr);
+        char command[MAXDATASIZE] = "";
+        while (strcmp(command, KEY_WORD)) {
+            readCommand(command);
+            sendCommand(command, connfd);
+            receiveCommand(connfd);
         }
-
-        ticks = time(NULL);
-        printf("%s%.24s - Connection accepted \n", KGRN, ctime(&ticks));
-        struct sockaddr_in addr = getSockName(connfd, sizeof(servaddr));
-        printf("%sPeer IP address: %s\n", KNRM, inet_ntoa(addr.sin_addr));
-        printf("%sPeer port      : %d\n", KNRM, ntohs(addr.sin_port));
-        
-        receiveMessage(connfd);
-
-        serverSleep();
-
-        ticks = time(NULL);
-        snprintf(buf, sizeof(buf), "Hello from server!\nTime: %.24s\r\n", ctime(&ticks));
-        write(connfd, buf, strlen(buf));
-        printf("%s%.24s - Message sent \n", KGRN, ctime(&ticks));
 
         close(connfd);
         ticks = time(NULL);
-        printf("%s%.24s - Connection closed \n", KGRN, ctime(&ticks));
+        printf("%s%.24s - Connection closed \n %s", KGRN, ctime(&ticks), KNRM);
     }
     return(0);
 }
