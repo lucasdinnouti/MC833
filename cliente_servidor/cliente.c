@@ -9,9 +9,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 
 #define MAXLINE 4096
 #define MAXDATASIZE 100
+#define KGRN  "\x1B[32m"
+#define KNRM  "\x1B[0m"
 
 /** @brief Reads a port number from input. 
  *
@@ -91,7 +94,8 @@ int main(int argc, char **argv) {
         exit(1);
     }
     
-    
+    time_t clock = time(NULL);
+    printf("%s%.24s - Starting \n%s", KGRN, ctime(&clock), KNRM);
     struct sockaddr_in addr = getSockName(sockfd, sizeof(servaddr));
     printf("Local IP address: %s\n", inet_ntoa(addr.sin_addr));
     printf("Local port      : %d\n", ntohs(addr.sin_port));

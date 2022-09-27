@@ -9,10 +9,13 @@
 #include <time.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 
 #define LISTENQ 10
 #define MAXDATASIZE 100
 #define MAXLINE 4096
+#define KGRN  "\x1B[32m"
+#define KNRM  "\x1B[0m"
 
 /** @brief Reads a port number from input and transforms it into a network byte. 
  *
@@ -56,9 +59,21 @@ struct sockaddr_in getSockName(int connfd, int addrSize) {
 void receiveMessage(int connfd) {
     char message[MAXLINE + 1] = { 0 };
     read(connfd, message, 1024);
-    printf("Message received: %s\n", message);
+    time_t clock = time(NULL);
+    printf("%s%.24s - Message received: %s\n", KGRN, ctime(&clock), message);
 }
 
+/** @brief Sleeps for 20 seconds before closing connection
+ *
+ *  Related to item 2 - ex 2.2
+ *
+ *  @param connfd socket identifier.
+ */
+void serverSleep() {
+    printf("%sStarting sleep... \n", KNRM);
+    sleep(20);
+    printf("%sFinishing sleep... \n", KNRM);    
+}
 
 int main (int argc, char **argv) {
     int    listenfd, connfd;
@@ -92,17 +107,24 @@ int main (int argc, char **argv) {
             exit(1);
         }
 
+        ticks = time(NULL);
+        printf("%s%.24s - Connection accepted \n", KGRN, ctime(&ticks));
         struct sockaddr_in addr = getSockName(connfd, sizeof(servaddr));
-        printf("Peer IP address: %s\n", inet_ntoa(addr.sin_addr));
-        printf("Peer port      : %d\n", ntohs(addr.sin_port));
+        printf("%sPeer IP address: %s\n", KNRM, inet_ntoa(addr.sin_addr));
+        printf("%sPeer port      : %d\n", KNRM, ntohs(addr.sin_port));
         
         receiveMessage(connfd);
+
+        serverSleep();
 
         ticks = time(NULL);
         snprintf(buf, sizeof(buf), "Hello from server!\nTime: %.24s\r\n", ctime(&ticks));
         write(connfd, buf, strlen(buf));
-        
+        printf("%s%.24s - Message sent \n", KGRN, ctime(&ticks));
+
         close(connfd);
+        ticks = time(NULL);
+        printf("%s%.24s - Connection closed \n", KGRN, ctime(&ticks));
     }
     return(0);
 }
