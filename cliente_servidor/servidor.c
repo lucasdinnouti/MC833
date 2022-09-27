@@ -80,16 +80,25 @@ int main (int argc, char **argv) {
     struct sockaddr_in servaddr;
     char   buf[MAXDATASIZE];
     time_t ticks;
+    char   error[MAXLINE + 1];
 
     if ((listenfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         perror("socket");
         exit(1);
     }
 
+    if (argc != 2) {
+        strcpy(error,"uso: ");
+        strcat(error,argv[0]);
+        strcat(error,"<Port>");
+        perror(error);
+        exit(1);
+    }
+
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family      = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port        = getPort();   
+    servaddr.sin_port        = htons(strtod(argv[1], NULL));
 
     if (bind(listenfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) {
         perror("bind");

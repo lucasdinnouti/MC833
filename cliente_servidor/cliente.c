@@ -68,10 +68,10 @@ int main(int argc, char **argv) {
     char   error[MAXLINE + 1];
     struct sockaddr_in servaddr;
 
-    if (argc != 2) {
+    if (argc != 3) {
         strcpy(error,"uso: ");
         strcat(error,argv[0]);
-        strcat(error," <IPaddress>");
+        strcat(error," <IPaddress> <Port>");
         perror(error);
         exit(1);
     }
@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
 
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port   = htons(getPort());
+    servaddr.sin_port   = htons(strtod(argv[2], NULL));
     if (inet_pton(AF_INET, argv[1], &servaddr.sin_addr) <= 0) {
         perror("inet_pton error");
         exit(1);
