@@ -16,7 +16,8 @@
 #define MAXLINE 4096
 #define KGRN  "\x1B[32m"
 #define KNRM  "\x1B[0m"
-#define KEY_WORD  "EXIT"
+#define EXIT_KEY_WORD  "EXIT"
+#define FILENAME  "output.txt"
 
 /** @brief Gets address from a given socket client using getpeername.
  *
@@ -42,11 +43,31 @@ struct sockaddr_in getSockName(int connfd, int addrSize) {
  *
  *  @param connfd socket identifier.
  */
-void receiveCommand(int connfd) {
-    char command[MAXLINE + 1] = { 0 };
-    read(connfd, command, 1024);
+void storeCommandOutput(int connfd, struct sockaddr_in servaddr) {
+    int n;
+    FILE *fp;
+    char output[MAXDATASIZE];
+    
+    fp = fopen(FILENAME, "w");
+
+    struct sockaddr_in addr = getSockName(connfd, sizeof(servaddr));
     time_t clock = time(NULL);
-    printf("%s%.24s - Command received: %s\n%s", KGRN, ctime(&clock), command, KNRM);
+    printf("%s%.24s - Command output [%s:%d]\n%s", KGRN, ctime(&clock), inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), KNRM);
+    fprintf(fp, "%.24s - Command output [%s:%d]\n", ctime(&clock), inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+
+    while (1) {
+        n = read(connfd, output, MAXDATASIZE);
+        if (n <= 0){
+            break;
+            return;
+        }
+        fprintf(fp, "%s", output);
+        printf("%s | %s %s", KGRN, output, KNRM);
+        bzero(output, MAXDATASIZE);
+    }
+    fflush(fp);
+    fclose(fp);
+    return;
 }
 
 /** @brief Sleeps for 20 seconds before closing connection
@@ -129,11 +150,12 @@ int main (int argc, char **argv) {
     for ( ; ; ) {
 
         connfd = acceptConnection(listenfd, servaddr);
+
         char command[MAXDATASIZE] = "";
-        while (strcmp(command, KEY_WORD)) {
+        while (strcmp(command, EXIT_KEY_WORD)) {
             readCommand(command);
             sendCommand(command, connfd);
-            receiveCommand(connfd);
+            storeCommandOutput(connfd, servaddr);
         }
 
         close(connfd);

