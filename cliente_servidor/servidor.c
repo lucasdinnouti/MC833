@@ -17,7 +17,7 @@
 #define KGRN  "\x1B[32m"
 #define KNRM  "\x1B[0m"
 #define EXIT_KEY_WORD  "EXIT"
-#define FILENAME  "output.txt"
+#define FILENAME "output.txt"
 
 /** @brief Gets address from a given socket client using getpeername.
  *
@@ -44,25 +44,21 @@ struct sockaddr_in getSockName(int connfd, int addrSize) {
  *  @param connfd socket identifier.
  */
 void storeCommandOutput(int connfd, struct sockaddr_in servaddr) {
-    int n;
     FILE *fp;
     char output[MAXDATASIZE];
+    char eof[MAXDATASIZE] = {1};
     
-    fp = fopen(FILENAME, "w");
+    fp = fopen(FILENAME, "a");
 
-    struct sockaddr_in addr = getSockName(connfd, sizeof(servaddr));
     time_t clock = time(NULL);
-    printf("%s%.24s - Command output [%s:%d]\n%s", KGRN, ctime(&clock), inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), KNRM);
+    struct sockaddr_in addr = getSockName(connfd, sizeof(servaddr));
+    // printf("%s%.24s - Command output [%s:%d]\n%s", KGRN, ctime(&clock), inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), KNRM);
     fprintf(fp, "%.24s - Command output [%s:%d]\n", ctime(&clock), inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
-    while (1) {
-        n = read(connfd, output, MAXDATASIZE);
-        if (n <= 0){
-            break;
-            return;
-        }
+    while ((read(connfd, output, MAXDATASIZE) > 0) && (strcmp(output, eof))) {
+
         fprintf(fp, "%s", output);
-        printf("%s | %s %s", KGRN, output, KNRM);
+        // printf("%s | %s %s", KGRN, output, KNRM);
         bzero(output, MAXDATASIZE);
     }
     fflush(fp);
@@ -152,11 +148,14 @@ int main (int argc, char **argv) {
         connfd = acceptConnection(listenfd, servaddr);
 
         char command[MAXDATASIZE] = "";
+        readCommand(command);
+
         while (strcmp(command, EXIT_KEY_WORD)) {
-            readCommand(command);
             sendCommand(command, connfd);
-            storeCommandOutput(connfd, servaddr);
+            readCommand(command);
         }
+        
+        storeCommandOutput(connfd, servaddr);
 
         close(connfd);
         ticks = time(NULL);

@@ -75,7 +75,8 @@ void sendCommandOutput(char* command, int sockfd){
         // printf("DEBUG: %s", output);
         write(sockfd, output, MAXDATASIZE);
     }
-
+    char eof[MAXDATASIZE] = {1};
+    write(sockfd, eof, MAXDATASIZE);
 }
 
 int main(int argc, char **argv) {
