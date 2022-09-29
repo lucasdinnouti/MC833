@@ -52,7 +52,6 @@ void storeCommandOutput(int connfd, struct sockaddr_in servaddr) {
 
     time_t clock = time(NULL);
     struct sockaddr_in addr = getSockName(connfd, sizeof(servaddr));
-    // printf("%s%.24s - Command output [%s:%d]\n%s", KGRN, ctime(&clock), inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), KNRM);
     fprintf(fp, "%.24s - Command output [%s:%d]\n", ctime(&clock), inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
     while ((read(connfd, output, MAXDATASIZE) > 0) && (strcmp(output, eof))) {
@@ -81,7 +80,7 @@ void serverSleep() {
 int acceptConnection(int listenfd, struct sockaddr_in servaddr) {
     int connfd;
 
-    if ((connfd = accept(listenfd, (struct sockaddr *) NULL, NULL)) == -1 ) {
+    if ((connfd = accept(listenfd, (struct sockaddr *) NULL, NULL)) == -1) {
         perror("accept");
         exit(1);
     }
@@ -142,20 +141,22 @@ int main (int argc, char **argv) {
         perror("listen");
         exit(1);
     }
-
+        
     for ( ; ; ) {
 
         connfd = acceptConnection(listenfd, servaddr);
 
         char command[MAXDATASIZE] = "";
-        readCommand(command);
 
-        while (strcmp(command, EXIT_KEY_WORD)) {
-            sendCommand(command, connfd);
-            readCommand(command);
-        }
         
-        storeCommandOutput(connfd, servaddr);
+        while (strcmp(command, EXIT_KEY_WORD)) {
+            readCommand(command);
+            sendCommand(command, connfd);
+
+            if (strcmp(command, EXIT_KEY_WORD) != 0) {
+                storeCommandOutput(connfd, servaddr);
+            }
+        }
 
         close(connfd);
         ticks = time(NULL);

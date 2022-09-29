@@ -15,6 +15,7 @@
 #define MAXDATASIZE 100
 #define KGRN  "\x1B[32m"
 #define KNRM  "\x1B[0m"
+#define EXIT_KEY_WORD  "EXIT"
 
 /** @brief Reads a port number from input. 
  *
@@ -119,7 +120,7 @@ int main(int argc, char **argv) {
 
     // sendMessage(sockfd);
     
-    while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
+    while (((n = read(sockfd, recvline, MAXLINE)) > 0) && strcmp(recvline, EXIT_KEY_WORD))  {
         recvline[n] = 0;
         if (fputs(recvline, stdout) == EOF) {
             perror("fputs error");
