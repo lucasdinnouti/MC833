@@ -100,7 +100,7 @@ void readCommand(char* command) {
 }
 
 void sendCommand(char* command, int connfd) {
-    char   buf[MAXDATASIZE];
+    char buf[MAXDATASIZE];
 
     snprintf(buf, sizeof(buf), "%s", command);
     write(connfd, buf, strlen(buf));
@@ -109,7 +109,7 @@ void sendCommand(char* command, int connfd) {
 }
 
 void assertValidArgs(int argc, char **argv) {
-    char   error[MAXLINE + 1];
+    char error[MAXLINE + 1];
 
     if (argc != 2) {
         strcpy(error,"uso: ");
@@ -131,17 +131,21 @@ int Socket(int family, int type, int flags) {
     return listenfd;
 }
 
-int Bind(int listenfd, struct sockaddr_in servaddr, int size) {
-    
+void Bind(int listenfd, struct sockaddr_in servaddr, int size) {
     if (bind(listenfd, (struct sockaddr *)&servaddr, size) == -1) {
         perror("socket");
         exit(1);
     }
-    
-    return listenfd;
 }
 
-int main (int argc, char **argv) {
+void Listen(int listenfd, int listenq) {
+    if (listen(listenfd, listenq) == -1) {
+        perror("listen");
+        exit(1);
+    }
+}
+
+int main(int argc, char **argv) {
     int    listenfd, connfd;
     struct sockaddr_in servaddr;
     time_t ticks;
@@ -157,10 +161,7 @@ int main (int argc, char **argv) {
 
     Bind(listenfd, servaddr, sizeof(servaddr));
 
-    if (listen(listenfd, LISTENQ) == -1) {
-        perror("listen");
-        exit(1);
-    }
+    Listen(listenfd, LISTENQ);
 
     for ( ; ; ) {
 
