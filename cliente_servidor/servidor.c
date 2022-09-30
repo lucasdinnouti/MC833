@@ -77,13 +77,20 @@ void serverSleep() {
     printf("%sFinishing sleep... \n", KNRM);    
 }
 
-int acceptConnection(int listenfd, struct sockaddr_in servaddr) {
+int Accept(int listenfd, struct sockaddr* addr, unsigned int* addrlen) {
     int connfd;
-
-    if ((connfd = accept(listenfd, (struct sockaddr *) NULL, NULL)) == -1) {
+    
+    if ((connfd = accept(listenfd, addr, addrlen)) == -1) {
         perror("accept");
         exit(1);
     }
+
+    return connfd;
+}
+
+int acceptConnection(int listenfd, struct sockaddr_in servaddr) {
+    socklen_t len = sizeof(servaddr);
+    int connfd = Accept(listenfd, (struct sockaddr *) NULL, &len);
 
     time_t clock = time(NULL);
     printf("%s%.24s - Connection accepted \n%s", KGRN, ctime(&clock), KNRM);
@@ -168,7 +175,6 @@ int main(int argc, char **argv) {
         connfd = acceptConnection(listenfd, servaddr);
 
         char command[MAXDATASIZE] = "";
-
         
         while (strcmp(command, EXIT_KEY_WORD)) {
             readCommand(command);
