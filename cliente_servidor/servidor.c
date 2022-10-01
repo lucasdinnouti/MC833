@@ -71,9 +71,9 @@ void storeCommandOutput(int connfd, struct sockaddr_in servaddr) {
  *
  *  @param connfd socket identifier.
  */
-void serverSleep() {
+void serverSleep(int time) {
     printf("%sStarting sleep... \n", KNRM);
-    sleep(20);
+    sleep(time);
     printf("%sFinishing sleep... \n", KNRM);    
 }
 
@@ -102,7 +102,7 @@ int acceptConnection(int listenfd, struct sockaddr_in servaddr) {
 }
 
 void readCommand(char* command) {
-    printf("Enter a command to execute on client: ");
+    printf("Enter a command to execute on client: \n");
     scanf("%s", command);
 }
 
@@ -171,23 +171,27 @@ int main(int argc, char **argv) {
     Listen(listenfd, LISTENQ);
 
     for ( ; ; ) {
-
         connfd = acceptConnection(listenfd, servaddr);
+    
+        if (fork() == 0) {
 
-        char command[MAXDATASIZE] = "";
+            char command[MAXDATASIZE] = "";
+            
+            while (strcmp(command, EXIT_KEY_WORD)) {
+                readCommand(command);
+                sendCommand(command, connfd);
         
-        while (strcmp(command, EXIT_KEY_WORD)) {
-            readCommand(command);
-            sendCommand(command, connfd);
+                serverSleep(5);
 
-            if (strcmp(command, EXIT_KEY_WORD) != 0) {
-                storeCommandOutput(connfd, servaddr);
+                if (strcmp(command, EXIT_KEY_WORD) != 0) {
+                    storeCommandOutput(connfd, servaddr);
+                }
             }
-        }
 
-        close(connfd);
-        ticks = time(NULL);
-        printf("%s%.24s - Connection closed \n %s", KGRN, ctime(&ticks), KNRM);
+            close(connfd);
+            ticks = time(NULL);
+            printf("%s%.24s - Connection closed \n %s", KGRN, ctime(&ticks), KNRM);
+        }
     }
     return(0);
 }
