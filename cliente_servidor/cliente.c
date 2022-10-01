@@ -83,7 +83,7 @@ void InetPton(int family, char* ip, void * port) {
 }
 
 void Connect(int sockfd, struct sockaddr *servaddr, int size) {
-    if (connect(sockfd, (struct sockaddr *) &servaddr, size) < 0) {
+    if (connect(sockfd, servaddr, size) < 0) {
         perror("connect error");
         exit(1);
     }
@@ -124,11 +124,16 @@ int main(int argc, char **argv) {
     printf("Local IP address: %s\n", inet_ntoa(addr.sin_addr));
     printf("Local port      : %d\n", ntohs(addr.sin_port));
     
-    while (((n = Read(sockfd, recvline, MAXLINE)) > 0) && strcmp(recvline, EXIT_KEY_WORD)) {
-        recvline[n] = 0;
+    while (((n = Read(sockfd, recvline, MAXLINE)) > 0)) {
+        if (strcmp(recvline, EXIT_KEY_WORD) == 0) {
+            close(sockfd);
+            break;
+        }
+
         Fputs(recvline, stdout);
         sendCommandOutput(recvline, sockfd);
-    }
+        bzero(recvline, MAXDATASIZE);
+    } 
 
     exit(0);
 }

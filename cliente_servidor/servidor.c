@@ -183,20 +183,23 @@ int main(int argc, char **argv) {
         connfd = acceptConnection(listenfd, servaddr);
     
         if (fork() == 0) {
+            close(listenfd);
 
             char command[MAXDATASIZE] = "";
             
-            while (strcmp(command, EXIT_KEY_WORD)) {
+            while (strcmp(command, EXIT_KEY_WORD) != 0) {
                 readCommand(command);
                 sendCommand(command, connfd);
         
-                // serverSleep(5);
+                //serverSleep(5);
 
                 if (strcmp(command, EXIT_KEY_WORD) != 0) {
                     storeCommandOutput(connfd, servaddr);
                 }
+                bzero(command, MAXDATASIZE);
             }
 
+            exit(0);
             close(connfd);
             ticks = time(NULL);
             // Manter para avaliacao
@@ -206,6 +209,7 @@ int main(int argc, char **argv) {
             fprintf(fp, "%s%.24s - Connection closed \n %s", KGRN, ctime(&ticks), KNRM);
             fclose(fp);
         }
+        close(connfd);
     }
     return(0);
 }
