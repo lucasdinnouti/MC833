@@ -60,7 +60,6 @@ void storeCommandOutput(int connfd, struct sockaddr_in servaddr) {
         // printf("%s | %s %s", KGRN, output, KNRM);
         bzero(output, MAXDATASIZE);
     }
-    fflush(fp);
     fclose(fp);
     return;
 }
@@ -93,11 +92,21 @@ int acceptConnection(int listenfd, struct sockaddr_in servaddr) {
     int connfd = Accept(listenfd, (struct sockaddr *) NULL, &len);
 
     time_t clock = time(NULL);
-    printf("%s%.24s - Connection accepted \n%s", KGRN, ctime(&clock), KNRM);
     struct sockaddr_in addr = getSockName(connfd, sizeof(servaddr));
-    printf("Peer IP address: %s\n", inet_ntoa(addr.sin_addr));
-    printf("Peer port      : %d\n", ntohs(addr.sin_port));
 
+    // Manter para avaliacao
+    // printf("%s%.24s - Connection accepted \n%s", KGRN, ctime(&clock), KNRM);
+    // printf("Peer IP address: %s\n", inet_ntoa(addr.sin_addr));
+    // printf("Peer port      : %d\n", ntohs(addr.sin_port));
+    FILE *fp;
+    fp = fopen(FILENAME, "a");
+    fprintf(fp, KGRN);
+    fprintf(fp, "%.24s - Connection accepted \n", ctime(&clock));
+    fprintf(fp, "Peer IP address: %s\n", inet_ntoa(addr.sin_addr));
+    fprintf(fp, "Peer port      : %d\n", ntohs(addr.sin_port));
+    fprintf(fp, KNRM);
+    fclose(fp);
+        
     return connfd;
 }
 
@@ -181,7 +190,7 @@ int main(int argc, char **argv) {
                 readCommand(command);
                 sendCommand(command, connfd);
         
-                serverSleep(5);
+                // serverSleep(5);
 
                 if (strcmp(command, EXIT_KEY_WORD) != 0) {
                     storeCommandOutput(connfd, servaddr);
@@ -190,7 +199,12 @@ int main(int argc, char **argv) {
 
             close(connfd);
             ticks = time(NULL);
-            printf("%s%.24s - Connection closed \n %s", KGRN, ctime(&ticks), KNRM);
+            // Manter para avaliacao
+            // printf("%s%.24s - Connection closed \n %s", KGRN, ctime(&ticks), KNRM);
+            FILE *fp;
+            fp = fopen(FILENAME, "a");
+            fprintf(fp, "%s%.24s - Connection closed \n %s", KGRN, ctime(&ticks), KNRM);
+            fclose(fp);
         }
     }
     return(0);
