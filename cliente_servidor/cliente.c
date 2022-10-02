@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
 
         printCommand(recvline);
 
-        Fputs(recvline, stdout);
+        // Fputs(recvline, stdout);
         sendCommandOutput(recvline, sockfd);
         bzero(recvline, MAXDATASIZE);
     } 

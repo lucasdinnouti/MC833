@@ -100,28 +100,27 @@ int acceptConnection(int listenfd, struct sockaddr_in servaddr) {
     // printf("Peer port      : %d\n", ntohs(addr.sin_port));
     FILE *fp;
     fp = fopen(FILENAME, "a");
-    fprintf(fp, KGRN);
     fprintf(fp, "%.24s - Connection accepted \n", ctime(&clock));
     fprintf(fp, "Peer IP address: %s\n", inet_ntoa(addr.sin_addr));
     fprintf(fp, "Peer port      : %d\n", ntohs(addr.sin_port));
-    fprintf(fp, KNRM);
     fclose(fp);
         
     return connfd;
 }
 
 void readCommand(char* command) {
-    printf("Enter a command to execute on client: \n");
     scanf("%s", command);
 }
 
-void sendCommand(char* command, int connfd) {
+void sendCommand(char* command, int connfd, struct sockaddr_in servaddr) {
     char buf[MAXDATASIZE];
 
     snprintf(buf, sizeof(buf), "%s", command);
     write(connfd, buf, strlen(buf));
+    
     time_t clock = time(NULL);
-    printf("%s%.24s - Command sent \n %s", KGRN, ctime(&clock), KNRM);
+    struct sockaddr_in addr = getSockName(connfd, sizeof(servaddr));
+    printf("%s%.24s - Command '%s' sent to %s:%d \n %s", KGRN, ctime(&clock), command, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), KNRM);
 }
 
 void assertValidArgs(int argc, char **argv) {
@@ -196,7 +195,7 @@ int main(int argc, char **argv) {
             
             while (strcmp(command, EXIT_KEY_WORD) != 0) {
                 readCommand(command);
-                sendCommand(command, connfd);
+                sendCommand(command, connfd, servaddr);
         
                 //serverSleep(5);
 
@@ -205,16 +204,16 @@ int main(int argc, char **argv) {
                 }
                 bzero(command, MAXDATASIZE);
             }
-
-            exit(0);
-            close(connfd);
             ticks = time(NULL);
             // Manter para avaliacao
             // printf("%s%.24s - Connection closed \n %s", KGRN, ctime(&ticks), KNRM);
             FILE *fp;
             fp = fopen(FILENAME, "a");
-            fprintf(fp, "%s%.24s - Connection closed \n %s", KGRN, ctime(&ticks), KNRM);
+            fprintf(fp, "%.24s - Connection closed \n", ctime(&ticks));
             fclose(fp);
+
+            close(connfd);
+            exit(0);
         }
         close(connfd);
     }
