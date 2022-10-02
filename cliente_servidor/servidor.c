@@ -107,7 +107,7 @@ int acceptConnection(int listenfd, struct sockaddr_in servaddr) {
     time_t clock = time(NULL);
     struct sockaddr_in addr = getPeerName(connfd, sizeof(servaddr));
 
-    // Manter para avaliacao
+    // Keep for assesment
     // printf("%s%.24s - Connection accepted \n%s", KGRN, ctime(&clock), KNRM);
     // printf("Peer IP address: %s\n", inet_ntoa(addr.sin_addr));
     // printf("Peer port      : %d\n", ntohs(addr.sin_port));
@@ -224,6 +224,7 @@ int main(int argc, char **argv) {
 
     Listen(listenfd, LISTENQ);
 
+    // Keep for assesment
     //pid_t pid = getpid();
     //printf("parent pid: %d \n", pid);
 
@@ -233,7 +234,8 @@ int main(int argc, char **argv) {
         // concurrency: related to item 3
         if (fork() == 0) {
             close(listenfd);
-
+            
+            // Keep for assesment
             //pid = getpid();
             //printf("child pid: %d \n", pid);
 
@@ -243,7 +245,8 @@ int main(int argc, char **argv) {
             while (strcmp(command, EXIT_KEY_WORD) != 0) {
                 readCommand(command);
                 sendCommand(command, connfd, servaddr);
-        
+
+                // Keep for assesment
                 //serverSleep(5);
 
                 if (strcmp(command, EXIT_KEY_WORD) != 0) {
@@ -252,7 +255,7 @@ int main(int argc, char **argv) {
                 bzero(command, MAXDATASIZE);
             }
             ticks = time(NULL);
-            // Manter para avaliacao
+            // Keep for assesment
             // printf("%s%.24s - Connection closed \n %s", KGRN, ctime(&ticks), KNRM);
             FILE *fp;
             fp = fopen(FILENAME, "a");
