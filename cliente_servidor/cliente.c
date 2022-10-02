@@ -18,6 +18,13 @@
 #define KNRM  "\x1B[0m"
 #define EXIT_KEY_WORD  "EXIT"
 
+
+/** @brief Wrapper function for getsockname: gets socket information.
+ *
+ *  @param sockfd socket identifier.
+ *  @param addr address for which the information will be retrieved.
+ *  @param addrlen size of the address.
+ */
 void GetSockName(int sockfd, struct sockaddr *addr, socklen_t * addrlen) {
     if (getsockname(sockfd, addr, addrlen) < 0) {
         perror("getsockname");
@@ -25,20 +32,18 @@ void GetSockName(int sockfd, struct sockaddr *addr, socklen_t * addrlen) {
     }
 }
 
+/** @brief Wrapper function for popen: executes bash commands.
+ *
+ *  @param command command which is being executed.
+ *  @param mode execution mode for command.
+ */
 FILE* Popen(char* command, char* mode) {
     FILE *fp;
     if ((fp = popen(command, mode)) == NULL) {
-        perror("fputs error");
+        perror("popen error");
         exit(1);
     }
     return fp;
-}
-
-void Fputs(const char *str, FILE *stream) {
-    if (fputs(str, stream) == EOF) {
-        perror("fputs error");
-        exit(1);
-    }
 }
 
 void sendCommandOutput(char* command, int sockfd){
@@ -46,7 +51,6 @@ void sendCommandOutput(char* command, int sockfd){
     char output[MAXDATASIZE] = {0};
     
     while(fgets(output, MAXDATASIZE, fp) != NULL) {
-        // printf("DEBUG: %s", output);
         write(sockfd, output, MAXDATASIZE);
     }
     char eof[MAXDATASIZE] = {1};
@@ -149,8 +153,6 @@ int main(int argc, char **argv) {
         }
 
         printCommand(recvline);
-
-        // Fputs(recvline, stdout);
         sendCommandOutput(recvline, sockfd);
         bzero(recvline, MAXDATASIZE);
     } 
