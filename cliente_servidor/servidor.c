@@ -19,15 +19,13 @@
 #define EXIT_KEY_WORD  "EXIT"
 #define FILENAME "output.txt"
 
-/** @brief Gets address from a given socket client using getpeername.
- *
- *  Related to item 6.
+/** @brief Wrapper function for getpeername: gets socket information.
  *
  *  @param connfd socket identifier.
  *  @param addrSize size of the returned address.
  *  @return socket address.
  */
-struct sockaddr_in getSockName(int connfd, int addrSize) {
+struct sockaddr_in getPeerName(int connfd, int addrSize) {
     struct sockaddr_in addr;
     socklen_t len = addrSize;
     if (getpeername(connfd, (struct sockaddr*)&addr, &len) == -1 ) {
@@ -37,11 +35,13 @@ struct sockaddr_in getSockName(int connfd, int addrSize) {
     return addr;
 }
 
-/** @brief Reads a message of size MAXLINE from a given open socket connection.
+/** @brief Reads a message of size MAXLINE from a given open socket connection and
+ *         stores it in the output file.
  *
- *  Related to item 7.
+ *  Related to item 3.
  *
  *  @param connfd socket identifier.
+ *  @param servaddr server address.
  */
 void storeCommandOutput(int connfd, struct sockaddr_in servaddr) {
     FILE *fp;
@@ -51,7 +51,7 @@ void storeCommandOutput(int connfd, struct sockaddr_in servaddr) {
     fp = fopen(FILENAME, "a");
 
     time_t clock = time(NULL);
-    struct sockaddr_in addr = getSockName(connfd, sizeof(servaddr));
+    struct sockaddr_in addr = getPeerName(connfd, sizeof(servaddr));
     fprintf(fp, "%.24s - Command output [%s:%d]\n", ctime(&clock), inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
     while ((read(connfd, output, MAXDATASIZE) > 0) && (strcmp(output, eof))) {
@@ -64,11 +64,11 @@ void storeCommandOutput(int connfd, struct sockaddr_in servaddr) {
     return;
 }
 
-/** @brief Sleeps for 20 seconds before closing connection
+/** @brief Sleeps for given seconds before closing connection
  *
- *  Related to item 2 - ex 2.2
+ *  Related to item 2.
  *
- *  @param connfd socket identifier.
+ *  @param time seconds to sleep.
  */
 void serverSleep(int time) {
     printf("%sStarting sleep... \n", KNRM);
@@ -76,6 +76,13 @@ void serverSleep(int time) {
     printf("%sFinishing sleep... \n", KNRM);    
 }
 
+/** @brief Wrapper function for accept: accepts a client connection.
+ *
+ *  @param listenfd socket identifier.
+ *  @param servaddr server address.
+ *  @param addrlen server address size.
+ *  @return new socket identifier.
+ */
 int Accept(int listenfd, struct sockaddr* addr, unsigned int* addrlen) {
     int connfd;
     
@@ -87,12 +94,18 @@ int Accept(int listenfd, struct sockaddr* addr, unsigned int* addrlen) {
     return connfd;
 }
 
+/** @brief Accepts a connection and saves client information to the output file.
+ *
+ *  @param listenfd socket identifier.
+ *  @param servaddr server address.
+ *  @return new socket identifier.
+ */
 int acceptConnection(int listenfd, struct sockaddr_in servaddr) {
     socklen_t len = sizeof(servaddr);
     int connfd = Accept(listenfd, (struct sockaddr *) NULL, &len);
 
     time_t clock = time(NULL);
-    struct sockaddr_in addr = getSockName(connfd, sizeof(servaddr));
+    struct sockaddr_in addr = getPeerName(connfd, sizeof(servaddr));
 
     // Manter para avaliacao
     // printf("%s%.24s - Connection accepted \n%s", KGRN, ctime(&clock), KNRM);
@@ -108,10 +121,20 @@ int acceptConnection(int listenfd, struct sockaddr_in servaddr) {
     return connfd;
 }
 
+/** @brief Reads a command from stdin.
+ *
+ *  @param command buffer to save input.
+ */
 void readCommand(char* command) {
     scanf("%s", command);
 }
 
+/** @brief Sends a command to a connected client.
+ *
+ *  @param command buffer to save input.
+ *  @param connfd socket identifier.
+ *  @param servaddr server address.
+ */
 void sendCommand(char* command, int connfd, struct sockaddr_in servaddr) {
     char buf[MAXDATASIZE];
 
@@ -119,10 +142,15 @@ void sendCommand(char* command, int connfd, struct sockaddr_in servaddr) {
     write(connfd, buf, strlen(buf));
     
     time_t clock = time(NULL);
-    struct sockaddr_in addr = getSockName(connfd, sizeof(servaddr));
+    struct sockaddr_in addr = getPeerName(connfd, sizeof(servaddr));
     printf("%s%.24s - Command '%s' sent to %s:%d \n %s", KGRN, ctime(&clock), command, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), KNRM);
 }
 
+/** @brief Validate program arguments.
+ *
+ *  @param argc number of arguments.
+ *  @param argv arguments.
+ */
 void assertValidArgs(int argc, char **argv) {
     char error[MAXLINE + 1];
 
@@ -135,6 +163,13 @@ void assertValidArgs(int argc, char **argv) {
     }
 }
 
+/** @brief Wrapper function for socket: Creates a socket.
+ *
+ *  @param family address family.
+ *  @param type socket type.
+ *  @param flags family flags.
+ *  @return new socket identifier.
+ */
 int Socket(int family, int type, int flags) {
     int listenfd;
 
@@ -146,6 +181,12 @@ int Socket(int family, int type, int flags) {
     return listenfd;
 }
 
+/** @brief Wrapper function for bind: connects a socket to an address.
+ *
+ *  @param listenfd socket identifier.
+ *  @param servaddr server address.
+ *  @param size server address size.
+ */
 void Bind(int listenfd, struct sockaddr_in servaddr, int size) {
     if (bind(listenfd, (struct sockaddr *)&servaddr, size) == -1) {
         perror("socket");
@@ -153,7 +194,12 @@ void Bind(int listenfd, struct sockaddr_in servaddr, int size) {
     }
 }
 
-void Listen(int listenfd, int listenq) {
+/** @brief Wrapper function for listen: Makes a socket passive.
+ *
+ *  @param listenfd socket identifier.
+ *  @param backlog connection buffer size.
+ */
+void Listen(int listenfd, int backlog) {
     if (listen(listenfd, listenq) == -1) {
         perror("listen");
         exit(1);
@@ -184,6 +230,7 @@ int main(int argc, char **argv) {
     for ( ; ; ) {
         connfd = acceptConnection(listenfd, servaddr);
     
+        // concurrency: related to item 3
         if (fork() == 0) {
             close(listenfd);
 
