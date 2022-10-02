@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+#include <ctype.h>
 
 #define MAXLINE 4096
 #define MAXDATASIZE 100
@@ -100,6 +101,21 @@ int Read(int sockfd, void *buf, size_t count) {
     return n;
 }
 
+void printCommand(char* recvline) {
+    char* copy = malloc(strlen(recvline) + 1);
+    char* c = copy;
+    
+    strcpy(copy, recvline);
+    
+    for (int i = strlen(recvline); i > 0; i--) {
+        *c = toupper(recvline[i - 1]);
+        c++;
+    }
+    c = '\0';
+
+    printf("Received Command: %s \n", copy);
+}
+
 int main(int argc, char **argv) {
     int    sockfd, n;
     char   recvline[MAXLINE + 1];
@@ -125,10 +141,14 @@ int main(int argc, char **argv) {
     printf("Local port      : %d\n", ntohs(addr.sin_port));
     
     while (((n = Read(sockfd, recvline, MAXLINE)) > 0)) {
+        recvline[n] = '\0';
+
         if (strcmp(recvline, EXIT_KEY_WORD) == 0) {
             close(sockfd);
             break;
         }
+
+        printCommand(recvline);
 
         Fputs(recvline, stdout);
         sendCommandOutput(recvline, sockfd);

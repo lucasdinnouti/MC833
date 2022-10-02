@@ -186,6 +186,7 @@ int main(int argc, char **argv) {
             close(listenfd);
 
             char command[MAXDATASIZE] = "";
+            bzero(command, MAXDATASIZE);
             
             while (strcmp(command, EXIT_KEY_WORD) != 0) {
                 readCommand(command);
