@@ -179,11 +179,17 @@ int main(int argc, char **argv) {
 
     Listen(listenfd, LISTENQ);
 
+    //pid_t pid = getpid();
+    //printf("parent pid: %d \n", pid);
+
     for ( ; ; ) {
         connfd = acceptConnection(listenfd, servaddr);
     
         if (fork() == 0) {
             close(listenfd);
+
+            //pid = getpid();
+            //printf("child pid: %d \n", pid);
 
             char command[MAXDATASIZE] = "";
             bzero(command, MAXDATASIZE);
