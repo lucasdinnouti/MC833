@@ -200,7 +200,7 @@ void Bind(int listenfd, struct sockaddr_in servaddr, int size) {
  *  @param backlog connection buffer size.
  */
 void Listen(int listenfd, int backlog) {
-    if (listen(listenfd, listenq) == -1) {
+    if (listen(listenfd, backlog) == -1) {
         perror("listen");
         exit(1);
     }
