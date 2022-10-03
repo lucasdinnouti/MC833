@@ -136,14 +136,14 @@ void readCommand(char* command) {
  *  @param servaddr server address.
  */
 void sendCommand(char* command, int connfd, struct sockaddr_in servaddr) {
+    time_t clock = time(NULL);
+    struct sockaddr_in addr = getPeerName(connfd, sizeof(servaddr));
+    printf("%s%.24s - Command '%s' sent to %s:%d \n %s", KGRN, ctime(&clock), command, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), KNRM);
+    
     char buf[MAXDATASIZE];
 
     snprintf(buf, sizeof(buf), "%s", command);
     write(connfd, buf, strlen(buf));
-    
-    time_t clock = time(NULL);
-    struct sockaddr_in addr = getPeerName(connfd, sizeof(servaddr));
-    printf("%s%.24s - Command '%s' sent to %s:%d \n %s", KGRN, ctime(&clock), command, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), KNRM);
 }
 
 /** @brief Validate program arguments.
@@ -249,23 +249,21 @@ int main(int argc, char **argv) {
                 // Keep for assesment
                 //serverSleep(5);
 
-                if (strcmp(command, EXIT_KEY_WORD) != 0) {
+                if (strcmp(command, EXIT_KEY_WORD) == 0) {
+                    ticks = time(NULL);
+                    // Keep for assesment
+                    // printf("%s%.24s - Connection closed \n %s", KGRN, ctime(&ticks), KNRM);
+                    FILE *fp;
+                    fp = fopen(FILENAME, "a");
+                    fprintf(fp, "%.24s - Connection closed \n", ctime(&ticks));
+                    fclose(fp);
+                    exit(0);
+                } else {
                     storeCommandOutput(connfd, servaddr);
                 }
                 bzero(command, MAXDATASIZE);
             }
-            ticks = time(NULL);
-            // Keep for assesment
-            // printf("%s%.24s - Connection closed \n %s", KGRN, ctime(&ticks), KNRM);
-            FILE *fp;
-            fp = fopen(FILENAME, "a");
-            fprintf(fp, "%.24s - Connection closed \n", ctime(&ticks));
-            fclose(fp);
-
-            close(connfd);
-            exit(0);
         }
-        close(connfd);
     }
     return(0);
 }
