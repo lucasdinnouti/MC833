@@ -43,7 +43,7 @@ struct sockaddr_in getPeerName(int connfd, int addrSize) {
  *  @param connfd socket identifier.
  *  @param servaddr server address.
  */
-void storeCommandOutput(int connfd, struct sockaddr_in servaddr) {
+void storeCommandOutput(int connfd, struct sockaddr_in addr) {
     FILE *fp;
     char output[MAXDATASIZE];
     char eof[MAXDATASIZE] = {1};
@@ -51,8 +51,7 @@ void storeCommandOutput(int connfd, struct sockaddr_in servaddr) {
     fp = fopen(FILENAME, "a");
 
     time_t clock = time(NULL);
-    struct sockaddr_in addr = getPeerName(connfd, sizeof(servaddr));
-    fprintf(fp, "%.24s - Command output [%s:%d]\n", ctime(&clock), inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+    fprintf(fp, "[%s:%d] (%.24s) - Command output\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), ctime(&clock));
 
     while ((read(connfd, output, MAXDATASIZE) > 0) && (strcmp(output, eof))) {
 
@@ -135,10 +134,9 @@ void readCommand(char* command) {
  *  @param connfd socket identifier.
  *  @param servaddr server address.
  */
-void sendCommand(char* command, int connfd, struct sockaddr_in servaddr) {
+void sendCommand(char* command, int connfd, struct sockaddr_in addr) {
     time_t clock = time(NULL);
-    struct sockaddr_in addr = getPeerName(connfd, sizeof(servaddr));
-    printf("%s%.24s - Command '%s' sent to %s:%d \n %s", KGRN, ctime(&clock), command, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), KNRM);
+    printf("%s[%s:%d] (%.24s) Command '%s' sent %s\n", KGRN, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), ctime(&clock), command, KNRM);
     
     char buf[MAXDATASIZE];
 
@@ -235,6 +233,8 @@ int main(int argc, char **argv) {
         if (fork() == 0) {
             close(listenfd);
             
+            struct sockaddr_in addr = getPeerName(connfd, sizeof(servaddr));
+
             // Keep for assesment
             //pid = getpid();
             //printf("child pid: %d \n", pid);
@@ -244,7 +244,7 @@ int main(int argc, char **argv) {
             
             while (strcmp(command, EXIT_KEY_WORD) != 0) {
                 readCommand(command);
-                sendCommand(command, connfd, servaddr);
+                sendCommand(command, connfd, addr);
 
                 // Keep for assesment
                 //serverSleep(5);
@@ -255,11 +255,11 @@ int main(int argc, char **argv) {
                     // printf("%s%.24s - Connection closed \n %s", KGRN, ctime(&ticks), KNRM);
                     FILE *fp;
                     fp = fopen(FILENAME, "a");
-                    fprintf(fp, "%.24s - Connection closed \n", ctime(&ticks));
+                    fprintf(fp, "[%s:%d] (%.24s) Connection closed \n",  inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), ctime(&ticks));
                     fclose(fp);
                     exit(0);
                 } else {
-                    storeCommandOutput(connfd, servaddr);
+                    storeCommandOutput(connfd, addr);
                 }
                 bzero(command, MAXDATASIZE);
             }
