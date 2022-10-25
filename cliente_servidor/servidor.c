@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 #define LISTENQ 10
+#define N_COMMANDS 4
 #define MAXDATASIZE 100
 #define MAXLINE 4096
 #define KGRN  "\x1B[32m"
@@ -106,7 +107,7 @@ int acceptConnection(int listenfd, struct sockaddr_in servaddr) {
     time_t clock = time(NULL);
     struct sockaddr_in addr = getPeerName(connfd, sizeof(servaddr));
 
-    // Keep for assesment
+    // Keep for assessment
     // printf("%s%.24s - Connection accepted \n%s", KGRN, ctime(&clock), KNRM);
     // printf("Peer IP address: %s\n", inet_ntoa(addr.sin_addr));
     // printf("Peer port      : %d\n", ntohs(addr.sin_port));
@@ -152,10 +153,10 @@ void sendCommand(char* command, int connfd, struct sockaddr_in addr) {
 void assertValidArgs(int argc, char **argv) {
     char error[MAXLINE + 1];
 
-    if (argc != 2) {
+    if (argc != 3) {
         strcpy(error,"uso: ");
         strcat(error,argv[0]);
-        strcat(error,"<Port>");
+        strcat(error,"<Port> <Backlog>\n");
         perror(error);
         exit(1);
     }
@@ -209,6 +210,13 @@ int main(int argc, char **argv) {
     struct sockaddr_in servaddr;
     time_t ticks;
 
+    // Hard-coded list of commands to be executed
+    char commands [N_COMMANDS][40];
+    strcpy(commands[0], "hostname\0"); 
+    strcpy(commands[1], "pwd\0");
+    strcpy(commands[2], "ls -l\0");
+    strcpy(commands[3], "EXIT\0");
+
     assertValidArgs(argc, argv);
 
     listenfd = Socket(AF_INET, SOCK_STREAM, 0);
@@ -220,9 +228,10 @@ int main(int argc, char **argv) {
 
     Bind(listenfd, servaddr, sizeof(servaddr));
 
-    Listen(listenfd, LISTENQ);
+    Listen(listenfd, atoi(argv[2]));
+    printf("%d\n", atoi(argv[2]));
 
-    // Keep for assesment
+    // Keep for assessment
     //pid_t pid = getpid();
     //printf("parent pid: %d \n", pid);
 
@@ -235,23 +244,31 @@ int main(int argc, char **argv) {
             
             struct sockaddr_in addr = getPeerName(connfd, sizeof(servaddr));
 
-            // Keep for assesment
+            // Keep for assessment
             //pid = getpid();
             //printf("child pid: %d \n", pid);
 
             char command[MAXDATASIZE] = "";
             bzero(command, MAXDATASIZE);
             
-            while (strcmp(command, EXIT_KEY_WORD) != 0) {
-                readCommand(command);
+            int i = 0; // in case of hard coded list
+
+            while (strcmp(command, EXIT_KEY_WORD) != 0) { //&& i < N_COMMANDS // in case of hard coded list
+
+                // Keep for assessment:
+                // If instead of readCommand(command), strcpy(command, commands[i++]) is executed,
+                // a hard-coded list will be sent. Otherwise the command will be prompted from the stdin.
+                strcpy(command, commands[i++]);
+
+                // readCommand(command);
                 sendCommand(command, connfd, addr);
 
-                // Keep for assesment
-                //serverSleep(5);
-
+                // Keep for assessment
+                // serverSleep(10);
+                
                 if (strcmp(command, EXIT_KEY_WORD) == 0) {
                     ticks = time(NULL);
-                    // Keep for assesment
+                    // Keep for assessment
                     // printf("%s%.24s - Connection closed \n %s", KGRN, ctime(&ticks), KNRM);
                     FILE *fp;
                     fp = fopen(FILENAME, "a");

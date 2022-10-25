@@ -203,6 +203,8 @@ int main(int argc, char **argv) {
         printCommand(recvline);
         sendCommandOutput(recvline, sockfd);
         bzero(recvline, MAXDATASIZE);
+
+        sleep(5);
     } 
 
     exit(0);
