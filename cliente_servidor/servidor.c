@@ -1,14 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <arpa/inet.h>
 #include <errno.h>
-#include <string.h>
 #include <netdb.h>
-#include <sys/types.h>
 #include <netinet/in.h>
+#include <string.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
-#include <arpa/inet.h>
 #include <unistd.h>
 
 #define LISTENQ 10
@@ -205,6 +208,48 @@ void Listen(int listenfd, int backlog) {
     }
 }
 
+
+/** @brief Section copied from the slides, regarding SIGCHLD handling.
+ */
+typedef void Sigfunc(int);
+
+Sigfunc* Signal (int signo, Sigfunc *func) {
+    struct sigaction act, oact;
+
+    act.sa_handler = func;
+    
+    sigemptyset (&act.sa_mask); /* Outros sinais não são bloqueados*/
+    
+    act.sa_flags = 0;
+    
+    if (signo == SIGALRM) { /* Para reiniciar chamadas interrompidas */
+        #ifdef SA_INTERRUPT
+        act.sa_flags |= SA_INTERRUPT; /* SunOS 4.x */
+        #endif
+    } else {
+        #ifdef SA_RESTART
+        act.sa_flags |= SA_RESTART; /* SVR4, 4.4BSD */
+        #endif
+    }
+
+    if (sigaction (signo, &act, &oact) < 0) {
+        return (SIG_ERR);
+    }
+    
+    return (oact.sa_handler);
+}
+
+void sig_chld(int signo) {
+	pid_t pid;
+	int stat;
+
+	while ((pid = waitpid(-1, &stat, WNOHANG)) > 0) {
+		printf("child %d terminated\n", pid);
+    }
+
+	return;
+}
+
 int main(int argc, char **argv) {
     int    listenfd, connfd;
     struct sockaddr_in servaddr;
@@ -227,19 +272,28 @@ int main(int argc, char **argv) {
     servaddr.sin_port        = htons(strtod(argv[1], NULL));
 
     Bind(listenfd, servaddr, sizeof(servaddr));
-
+    void sig_chld(int);
     Listen(listenfd, atoi(argv[2]));
-    printf("%d\n", atoi(argv[2]));
+    Signal(SIGCHLD, sig_chld);
 
     // Keep for assessment
     //pid_t pid = getpid();
     //printf("parent pid: %d \n", pid);
 
     for ( ; ; ) {
-        connfd = acceptConnection(listenfd, servaddr);
+        // serverSleep(30);
+
+        if ((connfd = acceptConnection(listenfd, servaddr)) < 0) {
+            if (errno == EINTR) {
+                continue; /* se for tratar o sinal, quando voltar dá erro em funções lentas */
+            } else {
+                perror("accept error");
+            }
+        }
     
         // concurrency: related to item 3
         if (fork() == 0) {
+            // serverSleep(30);
             close(listenfd);
             
             struct sockaddr_in addr = getPeerName(connfd, sizeof(servaddr));
