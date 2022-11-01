@@ -163,7 +163,7 @@ void printCommand(char* recvline) {
         *c = toupper(recvline[i - 1]);
         c++;
     }
-    c = '\0';
+    c = "\0";
 
     printf("Received Command: %s \n", copy);
 }

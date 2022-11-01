@@ -13,6 +13,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <unistd.h>
+#include <signal.h>
 
 #define LISTENQ 10
 #define N_COMMANDS 4
