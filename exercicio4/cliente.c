@@ -12,8 +12,11 @@
 #include <time.h>
 #include <ctype.h>
 
+#include "unp.h"
+
 #define MAXLINE 4096
 #define MAXDATASIZE 100
+#define SERVER_SETSIZE 2
 #define KGRN  "\x1B[32m"
 #define KNRM  "\x1B[0m"
 #define EXIT_KEY_WORD  "EXIT"
@@ -133,40 +136,107 @@ void assertValidArgs(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-    int    sockfd, n;
-    char   recvline[MAXLINE + 1];
+    int i, tmp, maxi, maxfd, connfd, sockfd;
+    int nready, server[SERVER_SETSIZE] = {-1};
+    
+    ssize_t n;
+    
+    fd_set rset, allset;
+    
+    char buf[MAXLINE];
+    char recvline[MAXLINE + 1];
+    
     struct sockaddr_in servaddr;
-
-    assertValidArgs(argc, argv);
-    sockfd = Socket(AF_INET, SOCK_STREAM, 0);
-
-    bzero(&servaddr, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port   = htons(strtod(argv[2], NULL));
+ 
+    maxfd = connfd = 0; /* initialize */
+    maxi = -1; /* index into server[] array */
     
-    InetPton(AF_INET, argv[1], &servaddr.sin_addr);
-    Connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
-    
-    time_t clock = time(NULL);
-    printf("%s%.24s - Starting \n%s", KGRN, ctime(&clock), KNRM);
+    FD_ZERO(&allset);
+    FD_SET(sockfd, &allset);
 
-    // struct sockaddr_in addr;
-    // socklen_t len = sizeof(servaddr);
-    // GetSockName(sockfd, (struct sockaddr *) &addr, &len);
-    // printf("Local IP address: %s\n", inet_ntoa(addr.sin_addr));
-    // printf("Local port      : %d\n", ntohs(addr.sin_port));
+    for ( ; ; ) {
+        
+        rset = allset; /* structure assignment */
+        nready = select(maxfd + 1, &rset, NULL, NULL, NULL);
+        
+        if (FD_ISSET(sockfd, &rset)) { /* new server connection */
+            // START OF SERVER CONNECTION CODE
 
-    // Read Hello from server
-    Read(sockfd, recvline, MAXLINE);
-    printf("%s\n", recvline);
+            sockfd = Socket(AF_INET, SOCK_STREAM, 0);
+
+            bzero(&servaddr, sizeof(servaddr));
+            servaddr.sin_family = AF_INET;
+            servaddr.sin_port   = htons(strtod(argv[2], NULL));
+            
+            InetPton(AF_INET, argv[1], &servaddr.sin_addr);
+            Connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
+            
+            time_t clock = time(NULL);
+            printf("%s%.24s - Starting \n%s", KGRN, ctime(&clock), KNRM);
+
+            // struct sockaddr_in addr;
+            // socklen_t len = sizeof(servaddr);
+            // GetSockName(sockfd, (struct sockaddr *) &addr, &len);
+            // printf("Local IP address: %s\n", inet_ntoa(addr.sin_addr));
+            // printf("Local port      : %d\n", ntohs(addr.sin_port));
+
+            // Read Hello from server
+            Read(sockfd, recvline, MAXLINE);
+            printf("%s\n", recvline);
+
+            // END OF SERVER CONNECTION CODE
+                        
+            for (i = 0; i < SERVER_SETSIZE; i++)             
+                if (server[i] < 0) {
+                    server[i] = connfd; /* save descriptor */
+                    break;
+                }
+            
+            if (i == SERVER_SETSIZE)
+                perror("too many servers");
+            
+            FD_SET(connfd, &allset); /* add new descriptor to set */
+            
+            if (connfd > maxfd)
+                maxfd = connfd; /* for select */
+            
+            if (i > maxi)
+                maxi = i; /* max index in server[] array */
+            
+            if (--nready <= 0)
+                continue; /* no more readable descriptors */
+        }
+
+        for (i = 0; i <= maxi; i++) { /* check all servers for data */
+            if ((sockfd = server[i]) < 0) {
+                continue;                
+            }
+
+            if (FD_ISSET(sockfd, &rset)) {
+                if ( (n = Read(sockfd, buf, MAXLINE)) == 0) {
+                    /* connection closed by server */
+                    close(sockfd);
+                    FD_CLR(sockfd, &allset);
+                    server[i] = -1;
+                } else {
+                    write(sockfd, buf, n);
+                    
+                    if (--nready <= 0)
+                        break; /* no more readable descriptors */
+                }
+            }
+        }
+    }
+
+    /////////////////////////
     
     while(fgets(recvline, MAXDATASIZE, stdin) > 0) {
         // Send string to server
         write(sockfd, recvline, MAXDATASIZE);
 
         // Receive echo from server
-        n = Read(sockfd, recvline, MAXLINE);
-        recvline[n] = '\0';
+        tmp = Read(sockfd, recvline, MAXLINE);
+        recvline[tmp] = '\0';
 
         // Print echo received
         printf("%s", recvline);

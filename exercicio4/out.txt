@@ -1,10 +1,12 @@
-[32mFri Nov 11 11:43:31 2022 - Starting 
+[32mTue Nov 15 23:41:55 2022 - Starting 
 [0mHello from server to client in: 
 Peer IP address: 192.168.15.154
-Peer port      : 54346
-Time           : Fri Nov 11 11:43:31 2022
+Peer port      : 36298
+Time           : Tue Nov 15 23:41:55 2022
 
-Teste entrada stdin do cliente
-MC833
-Turma 2s 2022
-Exercicio 5
+[32mTue Nov 15 23:41:55 2022 - Starting 
+[0mHello from server to client in: 
+Peer IP address: 192.168.15.154
+Peer port      : 36312
+Time           : Tue Nov 15 23:41:55 2022
+
