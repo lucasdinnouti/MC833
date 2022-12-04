@@ -148,25 +148,6 @@ void sendCommandOutput(char* command, int sockfd){
     write(sockfd, eof, MAXDATASIZE);
 }
 
-/** @brief function that prints a command received from the server inverted and in uppercase. 
- *         Example: hostname -> EMANTSOH
- *
- *  @param recvline command received from the server
- */
-void printCommand(char* recvline) {
-    char* copy = malloc(strlen(recvline) + 1);
-    char* c = copy;
-    
-    strcpy(copy, recvline);
-    
-    for (int i = strlen(recvline); i > 0; i--) {
-        *c = toupper(recvline[i - 1]);
-        c++;
-    }
-    c = "\0";
-
-    printf("Received Command: %s \n", copy);
-}
 
 int main(int argc, char **argv) {
     int    sockfd, n;
@@ -189,13 +170,8 @@ int main(int argc, char **argv) {
     while (((n = Read(sockfd, recvline, MAXLINE)) > 0)) {
         recvline[n] = '\0';
 
-        if (strcmp(recvline, EXIT_KEY_WORD) == 0) {
-            close(sockfd);
-            break;
-        }
-
-        printCommand(recvline);
-        sendCommandOutput(recvline, sockfd);
+        printf("Clients connected: \n");
+        printf("%s", recvline);
         bzero(recvline, MAXDATASIZE);
 
         // sleep(5);

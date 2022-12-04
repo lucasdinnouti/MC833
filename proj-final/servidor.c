@@ -116,9 +116,12 @@ void sendConnectedClients(char** clients, int clients_count, int connfd, struct 
     char buf[MAXDATASIZE];
 
     for (int i = 0; i < clients_count; i++) {
-        snprintf(buf, sizeof(buf), "%s", clients[i]);
+        char* client = clients[i];
+        strcat(client, "\n");
+        snprintf(buf, sizeof(buf), "%s",  client);
+        write(connfd, buf, strlen(buf));
     }
-    write(connfd, buf, strlen(buf));
+    
 }
 
 /** @brief Validate program arguments.
@@ -129,10 +132,10 @@ void sendConnectedClients(char** clients, int clients_count, int connfd, struct 
 void assertValidArgs(int argc, char **argv) {
     char error[MAXLINE + 1];
 
-    if (argc != 3) {
+    if (argc != 2) {
         strcpy(error,"uso: ");
         strcat(error,argv[0]);
-        strcat(error,"<Port> <Backlog>\n");
+        strcat(error,"<Port>\n");
         perror(error);
         exit(1);
     }
@@ -240,7 +243,7 @@ int main(int argc, char **argv) {
 
     Bind(listenfd, servaddr, sizeof(servaddr));
     void sig_chld(int);
-    Listen(listenfd, atoi(argv[2]));
+    Listen(listenfd, 2);
     Signal(SIGCHLD, sig_chld);
     
 
@@ -253,21 +256,19 @@ int main(int argc, char **argv) {
                 perror("accept error");
             }
         }
-    
-        if (fork() == 0) {
-            close(listenfd);
 
-            struct sockaddr_in addr = getPeerName(connfd, sizeof(servaddr));
+        struct sockaddr_in addr = getPeerName(connfd, sizeof(servaddr));
 
-            char* port = malloc(128);
-            snprintf(port, 128, "%u", addr.sin_port);
+        char* port = malloc(128);
+        snprintf(port, 128, "%u", addr.sin_port);
 
-            clients[clients_count] = port;
-            clients_count = clients_count + 1;
-            sendConnectedClients(clients, clients_count, connfd, addr);
-            
-            exit(0);
-        }
+        printf("port: %s \n", port);
+        clients[clients_count] = port;
+        clients_count = clients_count + 1;
+        printf("count: %d \n", clients_count);
+        sendConnectedClients(clients, clients_count, connfd, addr);
+
+        
     }
     return(0);
 }
