@@ -166,20 +166,25 @@ int main(int argc, char **argv) {
     time_t clock = time(NULL);
     printf("%s%.24s - Connected to server \n%s", KGRN, ctime(&clock), KNRM);
     
-    while (((n = Read(sockfd, recvline, MAXLINE)) > 0)) {
+    if (((n = Read(sockfd, recvline, MAXLINE)) > 0)) {
         recvline[n] = '\0';
+        if (strcmp(recvline, "No clients connected") != 0) {
+            
 
-        printf("Clients connected: \n");
-        printf("%s", recvline);
-        bzero(recvline, MAXDATASIZE);
+            printf("Clients connected: \n");
+            printf("%s", recvline);
+            bzero(recvline, MAXDATASIZE);
 
-        printf("Which client do you want to talk to? \n");
+            printf("Which client do you want to talk to? \n");
 
-        char* port = "";
-        fscanf(stdin,"%s", port);
-        write(sockfd, port, strlen(port));
+            char port[5];
+            fscanf(stdin,"%s", port);
+            write(sockfd, port, sizeof(port));
+        }
 
-        // sleep(5);
+        while (((n = Read(sockfd, recvline, MAXLINE)) > 0)) {
+            printf("Client %s will start a chat\n", recvline);
+        }
     } 
 
     exit(0);
