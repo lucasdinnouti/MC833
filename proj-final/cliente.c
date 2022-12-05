@@ -48,7 +48,6 @@ FILE* Popen(char* command, char* mode) {
     return fp;
 }
 
-
 /** @brief Wrapper function for socket: creates socket given configurations.
  *
  *  @param family address family. For example members of AF_INET address family are IPv4 addresses.
@@ -173,6 +172,12 @@ int main(int argc, char **argv) {
         printf("Clients connected: \n");
         printf("%s", recvline);
         bzero(recvline, MAXDATASIZE);
+
+        printf("Which client do you want to talk to? \n");
+
+        char* port = "";
+        fscanf(stdin,"%s", port);
+        write(sockfd, port, strlen(port));
 
         // sleep(5);
     } 

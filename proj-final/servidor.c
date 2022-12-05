@@ -226,9 +226,28 @@ void sig_chld(int signo) {
 	return;
 }
 
+/** @brief Wrapper function for read: reads information from socket.
+ *
+ *  @param sockfd socket identifier.
+ *  @param buf buffer where the information read from the socket will be written.
+ *  @param count how many bytes will be read at most.
+ *  @return size of read information.
+ */
+int Read(int sockfd, void *buf, size_t count) {
+    int n = read(sockfd, buf, count);
+
+    if (n < 0) {
+        perror("read error");
+        exit(1);
+    }
+
+    return n;
+}
+
 int main(int argc, char **argv) {
-    int    listenfd, connfd;
+    int    listenfd, connfd, n;
     struct sockaddr_in servaddr;
+    char   recvline[MAXLINE + 1];
     char* clients[MAXDATASIZE] = {};
     int clients_count = 0;
 
@@ -261,14 +280,16 @@ int main(int argc, char **argv) {
 
         char* port = malloc(128);
         snprintf(port, 128, "%u", addr.sin_port);
-
-        printf("port: %s \n", port);
-        clients[clients_count] = port;
-        clients_count = clients_count + 1;
-        printf("count: %d \n", clients_count);
         sendConnectedClients(clients, clients_count, connfd, addr);
 
-        
+        clients[clients_count] = port;
+        clients_count = clients_count + 1;
+
+//        while (((n = Read(connfd, recvline, MAXLINE)) > 0)) {
+//            recvline[n] = '\0';
+//            printf("Client %s chose client %s to talk to\n", port, recvline);
+//            bzero(recvline, MAXDATASIZE);
+//        }
     }
     return(0);
 }
