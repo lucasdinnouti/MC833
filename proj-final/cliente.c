@@ -170,16 +170,15 @@ int main(int argc, char **argv) {
         recvline[n] = '\0';
         if (strcmp(recvline, "No clients connected") != 0) {
             
-
             printf("Clients connected: \n");
             printf("%s", recvline);
             bzero(recvline, MAXDATASIZE);
 
             printf("Which client do you want to talk to? \n");
 
-            char port[5];
-            fscanf(stdin,"%s", port);
-            write(sockfd, port, sizeof(port));
+            char client[5];
+            fscanf(stdin,"%s", client);
+            write(sockfd, client, sizeof(client));
         }
 
         while (((n = Read(sockfd, recvline, MAXLINE)) > 0)) {
