@@ -110,9 +110,8 @@ void readCommand(char* command) {
  *
  *  @param command buffer to save input.
  *  @param connfd socket identifier.
- *  @param servaddr server address.
  */
-void sendConnectedClients(int* clients, int clients_count, int connfd, struct sockaddr_in addr) {
+void sendConnectedClients(int* clients, int clients_count, int connfd) {
     char buf[MAXDATASIZE];
 
     if (clients_count == 0) {
@@ -246,10 +245,13 @@ int Read(int sockfd, void *buf, size_t count) {
     return n;
 }
 
-void notifyOtherClient(int sourceConn, int destConn) {
-    char buf[4];
-    snprintf(buf, sizeof(buf), "%d",  sourceConn);
-    printf("Sending %d to %d", sourceConn, destConn);
+void notifyClient(int sourceConn, int destConn, struct sockaddr_in servaddr) {
+    char buf[MAXDATASIZE];
+
+    struct sockaddr_in addr = getPeerName(sourceConn, sizeof(servaddr));
+
+    snprintf(buf, sizeof(buf), "%d",  ntohs(addr.sin_port));
+    printf("Sending %d to %d", ntohs(addr.sin_port), destConn);
     write(destConn, buf, sizeof(buf));
 }
 
@@ -288,8 +290,7 @@ int main(int argc, char **argv) {
         time_t clock = time(NULL);
         printf("%s%.24s - Client connected: %d \n%s", KGRN, ctime(&clock), connfd, KNRM);
 
-        struct sockaddr_in addr = getPeerName(connfd, sizeof(servaddr));
-        sendConnectedClients(clients, clients_count, connfd, addr);
+        sendConnectedClients(clients, clients_count, connfd);
 
         clients[clients_count] = connfd;
         clients_count = clients_count + 1;
@@ -302,8 +303,10 @@ int main(int argc, char **argv) {
                 recvline[n] = '\0';
                 
                 printf("Client %d wants to talk to %s\n", connfd, recvline);
-
-                notifyOtherClient(connfd, atoi(recvline));
+                
+                notifyClient(connfd, atoi(recvline), servaddr);
+                notifyClient(atoi(recvline), connfd, servaddr);
+                
                 bzero(recvline, MAXDATASIZE);
             }
         }

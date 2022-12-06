@@ -168,12 +168,16 @@ int main(int argc, char **argv) {
     
     if (((n = Read(sockfd, recvline, MAXLINE)) > 0)) {
         recvline[n] = '\0';
-        if (strcmp(recvline, "No clients connected") != 0) {
             
-            printf("Clients connected: \n");
-            printf("%s", recvline);
-            bzero(recvline, MAXDATASIZE);
+        printf("Clients connected: \n");
+        printf("%s\n", recvline);
+        bzero(recvline, MAXDATASIZE);
 
+        printf("Do you want to talk to someone? \n");
+        char answer = '\0';
+        fscanf(stdin,"%c", &answer);
+
+        if (answer == 'y') {
             printf("Which client do you want to talk to? \n");
 
             char client[5];
@@ -182,7 +186,7 @@ int main(int argc, char **argv) {
         }
 
         while (((n = Read(sockfd, recvline, MAXLINE)) > 0)) {
-            printf("Client %s will start a chat\n", recvline);
+            printf("Starting chat with %s\n", recvline);
         }
     } 
 

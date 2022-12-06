@@ -175,3 +175,9 @@ Peer port      : 52953
 Mon Dec  5 20:30:47 2022 - Connection accepted 
 Peer IP address: 127.0.0.1
 Peer port      : 52955
+Tue Dec  6 20:24:58 2022 - Connection accepted 
+Peer IP address: 127.0.0.1
+Peer port      : 53015
+Tue Dec  6 20:25:08 2022 - Connection accepted 
+Peer IP address: 127.0.0.1
+Peer port      : 53019
