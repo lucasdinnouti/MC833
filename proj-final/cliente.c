@@ -149,9 +149,9 @@ void sendCommandOutput(char* command, int sockfd){
 
 
 int main(int argc, char **argv) {
-    int    sockfd, n;
+    int    sockfd, peerfd, n;
     char   recvline[MAXLINE + 1];
-    struct sockaddr_in servaddr;
+    struct sockaddr_in servaddr, peeraddr, cliaddr;
 
     assertValidArgs(argc, argv);
     sockfd = Socket(AF_INET, SOCK_STREAM, 0);
@@ -174,10 +174,10 @@ int main(int argc, char **argv) {
         bzero(recvline, MAXDATASIZE);
 
         printf("Do you want to talk to someone? \n");
-        char answer = '\0';
-        fscanf(stdin,"%c", &answer);
+        char initiate = '\0';
+        fscanf(stdin,"%c", &initiate);
 
-        if (answer == 'y') {
+        if (initiate == 'y') {
             printf("Which client do you want to talk to? \n");
 
             char client[5];
@@ -185,9 +185,48 @@ int main(int argc, char **argv) {
             write(sockfd, client, sizeof(client));
         }
 
-        while (((n = Read(sockfd, recvline, MAXLINE)) > 0)) {
-            printf("Starting chat with %s\n", recvline);
+        // Wait for server to send peer port
+        Read(sockfd, recvline, MAXLINE);
+        printf("Starting chat with %s\n", recvline);
+
+        
+        // Set peer address and socket
+        peerfd = Socket(AF_INET, SOCK_DGRAM, 0);    
+        peeraddr.sin_family = AF_INET;
+        peeraddr.sin_addr.s_addr = INADDR_ANY;
+        peeraddr.sin_port   = htons(atoi(recvline));
+
+        char message[MAXDATASIZE];
+        unsigned int len = sizeof(peeraddr);
+
+   
+        if (initiate == 'y') {
+            GetSockName(sockfd, (struct sockaddr *) &cliaddr, &len);
+            cliaddr.sin_family = AF_INET;
+            cliaddr.sin_addr.s_addr = INADDR_ANY;
+            
+            if (bind(peerfd, (const struct sockaddr *) &cliaddr, len) < 0) {
+                fprintf(stdout, "Failed to bind\n");
+            }
+
+            recvfrom(peerfd, message, MAXDATASIZE, 0, (struct sockaddr *) &peeraddr, &len);
+            fprintf(stdout, "\n%s: %s", recvline, message);
         }
+
+        for (;;) {
+            fprintf(stdout, "\nMe: ");
+            fscanf(stdin,"%s", message);
+            sendto(peerfd, message, strlen(message), 0, (const struct sockaddr *) &peeraddr , len);
+
+            recvfrom(peerfd, message, MAXDATASIZE, 0, (struct sockaddr *) &peeraddr, &len);
+            fprintf(stdout, "\n%s: %s", recvline, message);
+        }
+
+        // while (((n = Read(sockfd, recvline, MAXLINE)) > 0)) {
+        //     printf("Starting chat with %s\n", recvline);
+        // }
+
+
     } 
 
     exit(0);
