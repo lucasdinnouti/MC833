@@ -15,14 +15,12 @@
 #include <unistd.h>
 #include <signal.h>
 
-#define LISTENQ 10
-#define N_COMMANDS 4
 #define MAXDATASIZE 100
 #define MAXLINE 4096
 #define KGRN  "\x1B[32m"
 #define KNRM  "\x1B[0m"
-#define EXIT_KEY_WORD  "EXIT"
-#define FILENAME "output.txt"
+
+// WRAPPER FUNCTIONS
 
 /** @brief Wrapper function for getpeername: gets socket information.
  *
@@ -30,7 +28,7 @@
  *  @param addrSize size of the returned address.
  *  @return socket address.
  */
-struct sockaddr_in getPeerName(int connfd, int addrSize) {
+struct sockaddr_in GetPeerName(int connfd, int addrSize) {
     struct sockaddr_in addr;
     socklen_t len = addrSize;
     if (getpeername(connfd, (struct sockaddr*)&addr, &len) == -1 ) {
@@ -38,19 +36,6 @@ struct sockaddr_in getPeerName(int connfd, int addrSize) {
         exit(1);
     }
     return addr;
-}
-
-
-/** @brief Sleeps for given seconds before closing connection
- *
- *  Related to item 2.
- *
- *  @param time seconds to sleep.
- */
-void serverSleep(int time) {
-    printf("%sStarting sleep... \n", KNRM);
-    sleep(time);
-    printf("%sFinishing sleep... \n", KNRM);    
 }
 
 /** @brief Wrapper function for accept: accepts a client connection.
@@ -69,77 +54,6 @@ int Accept(int listenfd, struct sockaddr* addr, unsigned int* addrlen) {
     }
 
     return connfd;
-}
-
-/** @brief Accepts a connection and saves client information to the output file.
- *
- *  @param listenfd socket identifier.
- *  @param servaddr server address.
- *  @return new socket identifier.
- */
-int acceptConnection(int listenfd, struct sockaddr_in servaddr) {
-    socklen_t len = sizeof(servaddr);
-    int connfd = Accept(listenfd, (struct sockaddr *) NULL, &len);
-
-    time_t clock = time(NULL);
-    struct sockaddr_in addr = getPeerName(connfd, sizeof(servaddr));
-
-    // Keep for assessment
-    // printf("%s%.24s - Connection accepted \n%s", KGRN, ctime(&clock), KNRM);
-    // printf("Peer IP address: %s\n", inet_ntoa(addr.sin_addr));
-    // printf("Peer port      : %d\n", ntohs(addr.sin_port));
-    FILE *fp;
-    fp = fopen(FILENAME, "a");
-    fprintf(fp, "%.24s - Connection accepted \n", ctime(&clock));
-    fprintf(fp, "Peer IP address: %s\n", inet_ntoa(addr.sin_addr));
-    fprintf(fp, "Peer port      : %d\n", ntohs(addr.sin_port));
-    fclose(fp);
-        
-    return connfd;
-}
-
-/** @brief Reads a command from stdin.
- *
- *  @param command buffer to save input.
- */
-void readCommand(char* command) {
-    scanf("%s", command);
-}
-
-/** @brief Sends a command to a connected client.
- *
- *  @param command buffer to save input.
- *  @param connfd socket identifier.
- */
-void sendConnectedClients(int* clients, int clients_count, int connfd) {
-    char buf[MAXDATASIZE];
-
-    if (clients_count == 0) {
-        snprintf(buf, sizeof(buf), "No clients connected");
-        write(connfd, buf, strlen(buf));
-    } else {
-        for (int i = 0; i < clients_count; i++) {
-            snprintf(buf, sizeof(buf), "%d\n",  clients[i]);
-            write(connfd, buf, strlen(buf));
-        }
-    }
-}
-
-/** @brief Validate program arguments.
- *
- *  @param argc number of arguments.
- *  @param argv arguments.
- */
-void assertValidArgs(int argc, char **argv) {
-    char error[MAXLINE + 1];
-
-    if (argc != 2) {
-        strcpy(error,"uso: ");
-        strcat(error,argv[0]);
-        strcat(error,"<Port>\n");
-        perror(error);
-        exit(1);
-    }
 }
 
 /** @brief Wrapper function for socket: Creates a socket.
@@ -184,7 +98,6 @@ void Listen(int listenfd, int backlog) {
         exit(1);
     }
 }
-
 
 /** @brief Section copied from the slides, regarding SIGCHLD handling.
  */
@@ -245,14 +158,57 @@ int Read(int sockfd, void *buf, size_t count) {
     return n;
 }
 
+/** @brief Sends a client addr port to another client.
+ *
+ *  @param sourceConn the connection that will have the addr port sent.
+ *  @param destConn the connection that will receive the addr port.
+ *  @param servaddr the addr of this server.
+ */
 void notifyClient(int sourceConn, int destConn, struct sockaddr_in servaddr) {
     char buf[MAXDATASIZE];
 
-    struct sockaddr_in addr = getPeerName(sourceConn, sizeof(servaddr));
+    struct sockaddr_in addr = GetPeerName(sourceConn, sizeof(servaddr));
 
     snprintf(buf, sizeof(buf), "%d",  ntohs(addr.sin_port));
     printf("Sending %d to %d", ntohs(addr.sin_port), destConn);
     write(destConn, buf, sizeof(buf));
+}
+
+/** @brief Sends the list of connected clients to a connected client.
+ *
+ *  @param clients the list of connected clients.
+ *  @param clients_count size of conneted clients list.
+ *  @param connfd socket identifier.
+ */
+void sendConnectedClients(int* clients, int clients_count, int connfd) {
+    char buf[MAXDATASIZE];
+
+    if (clients_count == 0) {
+        snprintf(buf, sizeof(buf), "No clients connected");
+        write(connfd, buf, strlen(buf));
+    } else {
+        for (int i = 0; i < clients_count; i++) {
+            snprintf(buf, sizeof(buf), "%d\n",  clients[i]);
+            write(connfd, buf, strlen(buf));
+        }
+    }
+}
+
+/** @brief Validate program arguments.
+ *
+ *  @param argc number of arguments.
+ *  @param argv arguments.
+ */
+void assertValidArgs(int argc, char **argv) {
+    char error[MAXLINE + 1];
+
+    if (argc != 2) {
+        strcpy(error,"uso: ");
+        strcat(error,argv[0]);
+        strcat(error,"<Port>\n");
+        perror(error);
+        exit(1);
+    }
 }
 
 int main(int argc, char **argv) {
@@ -261,6 +217,7 @@ int main(int argc, char **argv) {
     char   recvline[MAXLINE + 1];
     int clients[MAXDATASIZE] = {};
     int clients_count = 0;
+    socklen_t len = sizeof(servaddr);
 
     assertValidArgs(argc, argv);
 
@@ -279,7 +236,7 @@ int main(int argc, char **argv) {
 
     for ( ; ; ) {
 
-        if ((connfd = acceptConnection(listenfd, servaddr)) < 0) {
+        if ((connfd = Accept(listenfd, (struct sockaddr *) NULL, &len)) < 0) {
             if (errno == EINTR) {
                 continue; /* se for tratar o sinal, quando voltar dá erro em funções lentas */
             } else {

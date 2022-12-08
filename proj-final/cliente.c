@@ -16,7 +16,6 @@
 #define MAXDATASIZE 100
 #define KGRN  "\x1B[32m"
 #define KNRM  "\x1B[0m"
-#define EXIT_KEY_WORD  "EXIT"
 
 // WRAPPER FUNCTIONS
 
@@ -92,7 +91,6 @@ void Connect(int sockfd, struct sockaddr *servaddr, int addrlen) {
     }
 }
 
-
 /** @brief Wrapper function for read: reads information from socket.
  *
  *  @param sockfd socket identifier.
@@ -130,23 +128,12 @@ void assertValidArgs(int argc, char **argv) {
     }
 }
 
-
-/** @brief function that uses popen to execute a bash command and sends its output back to the server.
+/** @brief writes a message in a output file
  *
- *  @param command command which is being executed.
- *  @param sockfd socket identifier.
+ *  @param message message to be write in the file.
+ *  @param sender the addrs port of who sent the message.
+ *  @param filename the path of the output file.
  */
-void sendCommandOutput(char* command, int sockfd){
-    FILE *fp = Popen(command, "r");
-    char output[MAXDATASIZE] = {0};
-    
-    while(fgets(output, MAXDATASIZE, fp) != NULL) {
-        write(sockfd, output, MAXDATASIZE);
-    }
-    char eof[MAXDATASIZE] = {1};
-    write(sockfd, eof, MAXDATASIZE);
-}
-
 void storeMessage(char* message, char* sender, char* filename) {
     FILE *fp;
     time_t clock = time(NULL);
@@ -157,7 +144,6 @@ void storeMessage(char* message, char* sender, char* filename) {
     fclose(fp);
     return;
 }
-
 
 int main(int argc, char **argv) {
     int    sockfd, peerfd, n;
@@ -230,8 +216,10 @@ int main(int argc, char **argv) {
         for (;;) {
             fprintf(stdout, "\nMe: ");
 
+            memset(message, 0, MAXDATASIZE);
             // fgets(message, MAXDATASIZE, stdin); // Reads a whole line instead of a word, but reads a couple of phantom lines... 
             fscanf(stdin, "%s", message);
+
             sendto(peerfd, message, strlen(message), 0, (const struct sockaddr *) &peeraddr , len);
             storeMessage(message, "me", recvline);
             memset(message, 0, MAXDATASIZE);
@@ -240,8 +228,9 @@ int main(int argc, char **argv) {
             fprintf(stdout, "\n%s: %s", recvline, message);
             storeMessage(message, recvline, recvline);
             memset(message, 0, MAXDATASIZE);
-
         }
+
+        storeMessage("finishing chat", "-", recvline);
 
         // while (((n = Read(sockfd, recvline, MAXLINE)) > 0)) {
         //     printf("Starting chat with %s\n", recvline);
