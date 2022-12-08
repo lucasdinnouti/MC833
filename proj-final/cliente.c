@@ -211,15 +211,21 @@ int main(int argc, char **argv) {
 
             recvfrom(peerfd, message, MAXDATASIZE, 0, (struct sockaddr *) &peeraddr, &len);
             fprintf(stdout, "\n%s: %s", recvline, message);
+            memset(message, 0, MAXDATASIZE);
         }
 
         for (;;) {
             fprintf(stdout, "\nMe: ");
-            fscanf(stdin,"%s", message);
+
+            // fgets(message, MAXDATASIZE, stdin); // Reads a whole line instead of a word, but reads a couple of phantom lines... 
+            fscanf(stdin, "%s", message);
             sendto(peerfd, message, strlen(message), 0, (const struct sockaddr *) &peeraddr , len);
+            memset(message, 0, MAXDATASIZE);
 
             recvfrom(peerfd, message, MAXDATASIZE, 0, (struct sockaddr *) &peeraddr, &len);
             fprintf(stdout, "\n%s: %s", recvline, message);
+            memset(message, 0, MAXDATASIZE);
+
         }
 
         // while (((n = Read(sockfd, recvline, MAXLINE)) > 0)) {

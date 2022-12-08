@@ -295,7 +295,6 @@ int main(int argc, char **argv) {
         clients[clients_count] = connfd;
         clients_count = clients_count + 1;
 
-
         if (fork() == 0) {
             close(listenfd);
 
