@@ -147,11 +147,22 @@ void sendCommandOutput(char* command, int sockfd){
     write(sockfd, eof, MAXDATASIZE);
 }
 
+void storeMessage(char* message, char* sender, char* filename) {
+    FILE *fp;
+    time_t clock = time(NULL);
+
+    fp = fopen(filename, "a");
+    
+    fprintf(fp, "[%.24s] %s: %s\n", ctime(&clock), sender, message);
+    fclose(fp);
+    return;
+}
+
 
 int main(int argc, char **argv) {
     int    sockfd, peerfd, n;
     char   recvline[MAXLINE + 1];
-    struct sockaddr_in servaddr, peeraddr, cliaddr;
+    struct sockaddr_in servaddr, peeraddr, myaddr;
 
     assertValidArgs(argc, argv);
     sockfd = Socket(AF_INET, SOCK_STREAM, 0);
@@ -195,22 +206,24 @@ int main(int argc, char **argv) {
         peeraddr.sin_family = AF_INET;
         peeraddr.sin_addr.s_addr = INADDR_ANY;
         peeraddr.sin_port   = htons(atoi(recvline));
+        storeMessage("starting chat", "-", recvline);
 
         char message[MAXDATASIZE];
         unsigned int len = sizeof(peeraddr);
 
    
         if (initiate == 'y') {
-            GetSockName(sockfd, (struct sockaddr *) &cliaddr, &len);
-            cliaddr.sin_family = AF_INET;
-            cliaddr.sin_addr.s_addr = INADDR_ANY;
+            GetSockName(sockfd, (struct sockaddr *) &myaddr, &len);
+            myaddr.sin_family = AF_INET;
+            myaddr.sin_addr.s_addr = INADDR_ANY;
             
-            if (bind(peerfd, (const struct sockaddr *) &cliaddr, len) < 0) {
+            if (bind(peerfd, (const struct sockaddr *) &myaddr, len) < 0) {
                 fprintf(stdout, "Failed to bind\n");
             }
 
             recvfrom(peerfd, message, MAXDATASIZE, 0, (struct sockaddr *) &peeraddr, &len);
             fprintf(stdout, "\n%s: %s", recvline, message);
+            storeMessage(message, recvline, recvline);
             memset(message, 0, MAXDATASIZE);
         }
 
@@ -220,10 +233,12 @@ int main(int argc, char **argv) {
             // fgets(message, MAXDATASIZE, stdin); // Reads a whole line instead of a word, but reads a couple of phantom lines... 
             fscanf(stdin, "%s", message);
             sendto(peerfd, message, strlen(message), 0, (const struct sockaddr *) &peeraddr , len);
+            storeMessage(message, "me", recvline);
             memset(message, 0, MAXDATASIZE);
 
             recvfrom(peerfd, message, MAXDATASIZE, 0, (struct sockaddr *) &peeraddr, &len);
             fprintf(stdout, "\n%s: %s", recvline, message);
+            storeMessage(message, recvline, recvline);
             memset(message, 0, MAXDATASIZE);
 
         }
