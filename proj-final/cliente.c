@@ -162,17 +162,19 @@ int main(int argc, char **argv) {
     
     time_t clock = time(NULL);
     printf("%s%.24s - Connected to server \n%s", KGRN, ctime(&clock), KNRM);
-    
-    if (((n = Read(sockfd, recvline, MAXLINE)) > 0)) {
-        recvline[n] = '\0';
-            
-        printf("Clients connected: \n");
-        printf("%s\n", recvline);
-        bzero(recvline, MAXDATASIZE);
 
-        printf("Do you want to talk to someone? \n");
+    n = Read(sockfd, recvline, MAXLINE);
+    recvline[n] = '\0';
+    
+    printf("Clients connected: \n");
+    printf("%s\n", recvline);
+    bzero(recvline, MAXDATASIZE);
+
+    for (;;) {
+
+        printf("\nDo you want to talk to someone? \n");
         char initiate = '\0';
-        fscanf(stdin,"%c", &initiate);
+        fscanf(stdin, " %c", &initiate);
 
         if (initiate == 'y') {
             printf("Which client do you want to talk to? \n");
@@ -180,12 +182,13 @@ int main(int argc, char **argv) {
             char client[5];
             fscanf(stdin,"%s", client);
             write(sockfd, client, sizeof(client));
+        } else {
+            printf("Waiting for someone else start the conversation... \n");
         }
 
         // Wait for server to send peer port
         Read(sockfd, recvline, MAXLINE);
         printf("Starting chat with %s\n", recvline);
-
         
         // Set peer address and socket
         peerfd = Socket(AF_INET, SOCK_DGRAM, 0);    
@@ -207,36 +210,43 @@ int main(int argc, char **argv) {
                 fprintf(stdout, "Failed to bind\n");
             }
 
-            recvfrom(peerfd, message, MAXDATASIZE, 0, (struct sockaddr *) &peeraddr, &len);
-            fprintf(stdout, "\n%s: %s", recvline, message);
-            storeMessage(message, recvline, recvline);
             memset(message, 0, MAXDATASIZE);
+            recvfrom(peerfd, message, MAXDATASIZE, 0, (struct sockaddr *) &peeraddr, &len);
+            fprintf(stdout, "\n%s%s: %s %s", KGRN, recvline, message, KNRM);
+            storeMessage(message, recvline, recvline);
+
+            if (strcmp(message, "finalizar_chat") == 0) {
+                storeMessage("finishing chat", "-", recvline);
+                close(peerfd);
+                continue;
+            }
         }
 
         for (;;) {
             fprintf(stdout, "\nMe: ");
-
+            // fgets(message, MAXDATASIZE, stdin); // Reads a whole line instead of a word, but reads a couple of phantom lines before... 
             memset(message, 0, MAXDATASIZE);
-            // fgets(message, MAXDATASIZE, stdin); // Reads a whole line instead of a word, but reads a couple of phantom lines... 
             fscanf(stdin, "%s", message);
-
             sendto(peerfd, message, strlen(message), 0, (const struct sockaddr *) &peeraddr , len);
             storeMessage(message, "me", recvline);
-            memset(message, 0, MAXDATASIZE);
 
+            if (strcmp(message, "finalizar_chat") == 0) {
+                write(sockfd, message, sizeof(message));
+                break;
+            }
+
+            memset(message, 0, MAXDATASIZE);
             recvfrom(peerfd, message, MAXDATASIZE, 0, (struct sockaddr *) &peeraddr, &len);
-            fprintf(stdout, "\n%s: %s", recvline, message);
             storeMessage(message, recvline, recvline);
-            memset(message, 0, MAXDATASIZE);
+            fprintf(stdout, "\n%s%s: %s %s", KGRN, recvline, message, KNRM);
+
+            if (strcmp(message, "finalizar_chat") == 0) {
+                break;
+            }
         }
-
+        
         storeMessage("finishing chat", "-", recvline);
-
-        // while (((n = Read(sockfd, recvline, MAXLINE)) > 0)) {
-        //     printf("Starting chat with %s\n", recvline);
-        // }
-
-
+        close(peerfd);
     } 
 
     exit(0);

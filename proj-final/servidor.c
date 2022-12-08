@@ -170,7 +170,7 @@ void notifyClient(int sourceConn, int destConn, struct sockaddr_in servaddr) {
     struct sockaddr_in addr = GetPeerName(sourceConn, sizeof(servaddr));
 
     snprintf(buf, sizeof(buf), "%d",  ntohs(addr.sin_port));
-    printf("Sending %d to %d", ntohs(addr.sin_port), destConn);
+    printf("\nSending %d to %d", ntohs(addr.sin_port), destConn);
     write(destConn, buf, sizeof(buf));
 }
 
@@ -257,13 +257,19 @@ int main(int argc, char **argv) {
 
             while (((n = Read(connfd, recvline, MAXLINE)) > 0)) {
                 recvline[n] = '\0';
-                
-                printf("Client %d wants to talk to %s\n", connfd, recvline);
-                
-                notifyClient(connfd, atoi(recvline), servaddr);
-                notifyClient(atoi(recvline), connfd, servaddr);
-                
-                bzero(recvline, MAXDATASIZE);
+
+                if (strcmp(recvline, "finalizar_chat") == 0) {
+                    fprintf(stdout, "\n%d ended the conversation.", connfd);
+                    fflush(stdout);
+                } else {
+                    printf("\nClient %d wants to talk to %s\n", connfd, recvline);
+                    
+                    notifyClient(connfd, atoi(recvline), servaddr);
+                    notifyClient(atoi(recvline), connfd, servaddr);
+                    
+                    bzero(recvline, MAXDATASIZE);
+                }
+
             }
         }
     }
